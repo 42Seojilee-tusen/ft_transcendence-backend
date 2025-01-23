@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pybo',
     'api',
 ]
 
@@ -166,12 +165,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'pybo': {  # 앱별 커스텀 로거
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'jwtapi': {  # 앱별 커스텀 로거
+        'api': {  # 앱별 커스텀 로거
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
