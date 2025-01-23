@@ -1,0 +1,43 @@
+services:
+  # frontend:
+  backend:
+    init: true
+    build: ./srcs/backend
+    image: django
+    container_name: django
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    ports:
+      - 8000:8000
+    networks:
+      - ft_trancendence
+    volumes:
+      - ./srcs/backend/srcs:/projects
+    depends_on:
+      - database
+
+  database:
+    init: true
+    image: postgres:latest
+    container_name: ${POSTGRES_HOST}
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - 5432:5432
+    networks:
+      - ft_trancendence
+    volumes:
+      - ./srcs/database/srcs:/var/lib/postgresql/data
+
+
+networks:
+  ft_trancendence:
+
