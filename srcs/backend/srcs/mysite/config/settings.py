@@ -18,18 +18,16 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=%mj6fmx5d+twcw1!$h6l_ac52z8j%r=&g$jav(7sprbquo84!'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -40,7 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
+]
+
+# 추가된 앱들
+INSTALLED_APPS += [
+    'users',
+    'oauth',
 ]
 
 MIDDLEWARE = [
@@ -165,7 +168,17 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'api': {  # 앱별 커스텀 로거
+        'oauth': {  # 앱별 커스텀 로거
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'users': {  # 앱별 커스텀 로거
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'utils': {  # 앱별 커스텀 로거
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
@@ -191,7 +204,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # 리프레시 토큰 유효 기간
     'ROTATE_REFRESH_TOKENS': True,                 # 리프레시 토큰 갱신 여부
     'BLACKLIST_AFTER_ROTATION': True,              # 갱신 후 이전 리프레시 토큰 블랙리스트 처리
-    "SIGNING_KEY": "dGFqZW9uZ3RhamVvbmd0YWplb25n", # tajeongtajeongtajeong
+    "SIGNING_KEY": os.getenv('SIGNING_KEY'), # tajeongtajeongtajeong
 }
 
-AUTH_USER_MODEL = 'api.TCDUser'
+AUTH_USER_MODEL = 'users.TCDUser'
