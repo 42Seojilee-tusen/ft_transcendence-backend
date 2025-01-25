@@ -16,6 +16,8 @@ services:
       UID_KEY: ${UID_KEY}
       SECRET_KEY: ${SECRET_KEY}
       REDIRECTION_URI: ${REDIRECTION_URI}
+      SIGNING_KEY: ${SIGNING_KEY}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
     ports:
       - 8000:8000
     networks:
@@ -40,7 +42,6 @@ services:
       - ft_trancendence
     volumes:
       - ./srcs/database/srcs:/var/lib/postgresql/data
-
 
 networks:
   ft_trancendence:
