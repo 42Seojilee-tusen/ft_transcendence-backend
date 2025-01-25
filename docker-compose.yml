@@ -12,6 +12,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+      AUTH_URL: ${AUTH_URL}
+      UID_KEY: ${UID_KEY}
+      SECRET_KEY: ${SECRET_KEY}
+      REDIRECTION_URI: ${REDIRECTION_URI}
     ports:
       - 8000:8000
     networks:
