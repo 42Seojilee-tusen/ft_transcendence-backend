@@ -1,4 +1,3 @@
-
 all: up
 
 up:
@@ -16,6 +15,9 @@ restart:
 re:
 	make down
 	make up
+
+rm_db:
+	rm -rf srcs/database/srcs
 
 freeze:
 	docker exec django pip freeze > ./srcs/backend/requirements.txt.local
