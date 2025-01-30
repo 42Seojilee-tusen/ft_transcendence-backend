@@ -24,24 +24,22 @@ class UserView(APIView):
 class UserAuthView(APIView):
     def get(self, request):
         access_token = get_access_token(request)
-
         try:
             # Access Token 검증
             token = AccessToken(access_token)  # 토큰 서명 및 유효성 검증
-
-            # 검증 성공 시, 토큰의 페이로드 확인 가능
-            user_id = token['user_id']  # 페이로드에서 user_id 추출
-
-            # TCDUser 모델에서 user_id에 해당하는 사용자 정보 가져오기
-            # user = get_object_or_404(TCDUser, id=user_id)
-            user = TCDUser.objects.get(id = user_id)
-            
-            serializer = TCDUserSerializer(user)
-
-            return JsonResponse({
-                "message": "Token is valid",
-                "user": serializer.data
-            })
         except TokenError as e:
             # 검증 실패 (만료되었거나, 위조된 토큰)
             return JsonResponse({'message': f'Token is invalid: {str(e)}'}, status=401)
+        # 검증 성공 시, 토큰의 페이로드 확인 가능
+        user_id = token['user_id']  # 페이로드에서 user_id 추출
+
+        # TCDUser 모델에서 user_id에 해당하는 사용자 정보 가져오기
+        # user = get_object_or_404(TCDUser, id=user_id)
+        user = TCDUser.objects.get(id = user_id)
+        
+        serializer = TCDUserSerializer(user)
+
+        return JsonResponse({
+            "message": "Token is valid",
+            "user": serializer.data
+        })
