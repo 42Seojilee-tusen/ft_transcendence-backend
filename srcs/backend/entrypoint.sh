@@ -12,4 +12,5 @@ test -f manage.py || django-admin startproject mysite .
 
 #tail -f /logs/django.log
 
-python3 manage.py runserver 0.0.0.0:8000
+# python3 manage.py runserver 0.0.0.0:8000
+gunicorn config.wsgi --bind 0.0.0.0:8000
