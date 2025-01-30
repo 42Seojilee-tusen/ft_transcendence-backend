@@ -18,6 +18,7 @@ services:
       REDIRECTION_URI: ${REDIRECTION_URI}
       SIGNING_KEY: ${SIGNING_KEY}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_ISSUER: ${DJANGO_ISSUER}
     ports:
       - 8000:8000
     networks:
