@@ -22,7 +22,7 @@ logger = logging.getLogger('oauth')
 @csrf_protect
 def crsf(request):
     if request.method == 'GET':
-        return HttpResponse("crsf_get")
+        return JsonResponse({'message':"crsf_get"}, status=200)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 # jwt토큰 반환 API
