@@ -1,6 +1,8 @@
 .DS_Store
 .env
 /srcs/database/
+/srcs/backend/srcs/mysite/images
+/srcs/frontend/
 .vscode/
 chromedriver
 config.ini
