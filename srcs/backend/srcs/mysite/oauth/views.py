@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 from utils.validation import validate_data, validate_header
 from utils.authentication import get_access_token
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from users.models import TCDUser
 import json
 import pyotp
@@ -19,7 +19,7 @@ logger = logging.getLogger('oauth')
 # Create your views here.
 
 # csrf 토큰을 받기위한 GET 메서드
-@csrf_protect
+@ensure_csrf_cookie
 def crsf(request):
     if request.method == 'GET':
         return JsonResponse({'message':"crsf_get"}, status=200)
