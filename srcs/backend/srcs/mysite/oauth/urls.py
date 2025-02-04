@@ -18,7 +18,7 @@ urlpatterns = [
 
     # 테스트 api
     path('2fa/image', views.show_qr_image),
-    path('2fa/authorize', views.authorisation_2fa),
+    path('2fa/authorize', views.authorization_2fa),
     path('callback', views.callback),
     path('login', views.login),
 ]

@@ -152,7 +152,7 @@ def refresh_qrcode_image(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 # 2fa 검증용 코드
-def authorisation_2fa(request):
+def authorization_2fa(request):
     user_otp = request.GET.get('user_otp')
     access_token = get_access_token(request)
     try:
