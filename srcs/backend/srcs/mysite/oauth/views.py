@@ -92,7 +92,6 @@ class TokenView(APIView):
         refresh_token['is_2fa_authenticated'] = False
         access_token = refresh_token.access_token
         access_token['is_2fa_authenticated'] = False
-        # tokens = make_tokens(user)
         
         response = Response({
             'access_token': str(access_token),
@@ -106,15 +105,6 @@ class TokenView(APIView):
             samesite='Lax',
             max_age=7 * 24 * 60 * 60
         )
-        
-        # response.set_cookie(
-        #     key='access_token',
-        #     value=str(access_token),
-        #     httponly=True,
-        #     secure=True,
-        #     samesite='Lax',
-        #     max_age=7 * 24 * 60 * 60
-        # )
         return response
 
 
@@ -122,8 +112,6 @@ class TokenRefreshView(APIView):
     authentication_classes = []
     permission_classes = []
     def post(self, request):
-        # check_json_data(request, ['refresh_token'])
-        # old_refresh_token = request.data.get('refresh_token')
         old_refresh_token = request.COOKIE.get('refresh_token')
         try:
             old_refresh_token = RefreshToken(old_refresh_token)
@@ -158,24 +146,7 @@ class TokenRefreshView(APIView):
             samesite='Lax',
             max_age=7 * 24 * 60 * 60
         )
-        
-        # response.set_cookie(
-        #     key='access_token',
-        #     value=str(new_access_token),
-        #     httponly=True,
-        #     secure=True,
-        #     samesite='Lax',
-        #     max_age=7 * 24 * 60 * 60
-        # )
         return response
-
-class TestView(APIView):
-    authentication_classes = []
-    permission_classes = []
-    def get(self, request):
-        user = request.user
-        serializer = CustomUserSerializer(user)  # many=True 옵션
-        return Response(serializer.data)
 
 class TwoFactorView(APIView):
     permission_classes = []
@@ -218,11 +189,11 @@ class TwoFactorView(APIView):
             refresh_token['is_2fa_authenticated'] = True
             access_token = refresh_token.access_token
             access_token['is_2fa_authenticated'] =True
-            
+
             response = Response({
-                'message': '코드가 올바릅니다',
+                'access_token': access_token
             })
-            
+
             response.set_cookie(
                 key='refresh_token',
                 value=str(refresh_token),
@@ -231,18 +202,7 @@ class TwoFactorView(APIView):
                 samesite='Lax',
                 max_age=7 * 24 * 60 * 60
             )
-            
-            response.set_cookie(
-                key='access_token',
-                value=str(access_token),
-                httponly=True,
-                secure=True,
-                samesite='Lax',
-                max_age=7 * 24 * 60 * 60
-            )
             return response
-        return JsonResponse({
-            'error': '코드가 다릅니다.',
-            'cur_otp_code': cur_otp_code,
-            'otp_code': otp_code
-        }, status=401)
+        return Response({
+            'error': '인증코드가 틀렸습니다.'
+        }, status=403)
