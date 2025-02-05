@@ -24,6 +24,7 @@ from django.conf import settings
 
 from django.core.files.base import ContentFile
 from rest_framework.permissions import AllowAny
+from django.core.files.storage import default_storage
 
 import logging
 logger = logging.getLogger('oauth') 
@@ -78,12 +79,14 @@ class TokenView(APIView):
             email = api_data['email'],
         )
 
-        image_response = requests.get(api_data["image"]["link"])
-        if image_response.status_code != 200:
-            return Response(image_response.json(), status=image_response.status_code)
-        
-        logger.debug("user.id: ", + user.id)
-        user.profile_image.save(f'_{user.id}.png', ContentFile(image_response.content), save=True)
+        file_name = f'_{user.id}.png'
+        file_path = user.profile_image.field.upload_to + '/' + file_name
+
+        if not default_storage.exists(file_path):
+            image_response = requests.get(api_data["image"]["link"])
+            if image_response.status_code != 200:
+                return Response(image_response.json(), status=image_response.status_code)
+            user.profile_image.save(file_name, ContentFile(image_response.content), save=True)
 
         refresh_token = RefreshToken.for_user(user)
         refresh_token['is_2fa_authenticated'] = False
@@ -91,7 +94,9 @@ class TokenView(APIView):
         access_token['is_2fa_authenticated'] = False
         # tokens = make_tokens(user)
         
-        response = Response({'message': '로그인 성공!'})
+        response = Response({
+            'access_token': str(access_token),
+        })
 
         response.set_cookie(
             key='refresh_token',
@@ -102,14 +107,14 @@ class TokenView(APIView):
             max_age=7 * 24 * 60 * 60
         )
         
-        response.set_cookie(
-            key='access_token',
-            value=str(access_token),
-            httponly=True,
-            secure=True,
-            samesite='Lax',
-            max_age=7 * 24 * 60 * 60
-        )
+        # response.set_cookie(
+        #     key='access_token',
+        #     value=str(access_token),
+        #     httponly=True,
+        #     secure=True,
+        #     samesite='Lax',
+        #     max_age=7 * 24 * 60 * 60
+        # )
         return response
 
 
@@ -117,8 +122,9 @@ class TokenRefreshView(APIView):
     authentication_classes = []
     permission_classes = []
     def post(self, request):
-        check_json_data(request, ['refresh_token'])
-        old_refresh_token = request.data.get('refresh_token')
+        # check_json_data(request, ['refresh_token'])
+        # old_refresh_token = request.data.get('refresh_token')
+        old_refresh_token = request.COOKIE.get('refresh_token')
         try:
             old_refresh_token = RefreshToken(old_refresh_token)
         except TokenError as e:
@@ -135,14 +141,14 @@ class TokenRefreshView(APIView):
             }
             return Response(error_message, status=401)
         user = CustomUser.objects.get(id=old_refresh_token['user_id'])
-        
+
         new_refresh_token = RefreshToken.for_user(user)
         new_refresh_token['is_2fa_authenticated'] = old_refresh_token['is_2fa_authenticated']
         new_access_token = new_refresh_token.access_token
         new_access_token['is_2fa_authenticated'] = old_refresh_token['is_2fa_authenticated']
-        
+
         response = Response({
-            'message': '토큰 재발급 성공!',
+            'access_token': str(new_access_token),
         })
         response.set_cookie(
             key='refresh_token',
@@ -153,14 +159,14 @@ class TokenRefreshView(APIView):
             max_age=7 * 24 * 60 * 60
         )
         
-        response.set_cookie(
-            key='access_token',
-            value=str(new_access_token),
-            httponly=True,
-            secure=True,
-            samesite='Lax',
-            max_age=7 * 24 * 60 * 60
-        )
+        # response.set_cookie(
+        #     key='access_token',
+        #     value=str(new_access_token),
+        #     httponly=True,
+        #     secure=True,
+        #     samesite='Lax',
+        #     max_age=7 * 24 * 60 * 60
+        # )
         return response
 
 class TestView(APIView):
