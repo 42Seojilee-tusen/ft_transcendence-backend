@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -204,18 +204,23 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'utils.permissions.IsTwoFactorAuthenticated',
+    ),
 }
 
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # 액세스 토큰 유효 기간
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # 리프레시 토큰 유효 기간
+    # 'ACCESS_TOKEN_LIFETIME': timedelta(seconds=10),  # 액세스 토큰 유효 기간
+    # 'REFRESH_TOKEN_LIFETIME': timedelta(minutes=1),    # 리프레시 토큰 유효 기간
     'ROTATE_REFRESH_TOKENS': True,                 # 리프레시 토큰 갱신 여부
     'BLACKLIST_AFTER_ROTATION': True,              # 갱신 후 이전 리프레시 토큰 블랙리스트 처리
     "SIGNING_KEY": os.getenv('SIGNING_KEY'), # tajeongtajeongtajeong
 }
 
-AUTH_USER_MODEL = 'users.TCDUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 CSRF_TRUSTED_ORIGINS = ['https://localhost','https://*.127.0.0.1']
 
@@ -231,3 +236,12 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 사용자 업로드 파일들이 저장될 디렉터리 경로 지정
+MEDIA_ROOT = os.path.join(BASE_DIR, 'images')
+
+# 브라우저에서 미디어 파일을 접근할 때 사용할 URL prefix
+MEDIA_URL = '/images/'

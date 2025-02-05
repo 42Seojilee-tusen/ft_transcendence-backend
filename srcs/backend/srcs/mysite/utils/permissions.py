@@ -12,8 +12,8 @@
 #             raise AuthenticationFailed("2FA 인증이 필요합니다.")
 
 #         return user, token  # 2FA 인증된 사용자 반환
-# from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission
 
-# class IsTwoFactorAuthenticated(BasePermission):
-#     def has_permission(self, request, view):
-#         return request.auth.get('is_2fa_authenticated', False)
+class IsTwoFactorAuthenticated(BasePermission):
+    def has_permission(self, request, view):
+        return request.auth.get('is_2fa_authenticated', False)
