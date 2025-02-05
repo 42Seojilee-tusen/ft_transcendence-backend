@@ -31,7 +31,15 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+# 추가된 앱들
 INSTALLED_APPS = [
+    'users',
+    'oauth',
+    'chat',
+    'daphne',
+]
+
+INSTALLED_APPS += [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,11 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-# 추가된 앱들
-INSTALLED_APPS += [
-    'users',
-    'oauth',
-]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -163,11 +166,11 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django': {  # Django 기본 로거
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+        # 'django': {  # Django 기본 로거
+        #     'handlers': ['console', 'file'],
+        #     'level': 'DEBUG',
+        #     'propagate': True,
+        # },
         'oauth': {  # 앱별 커스텀 로거
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
@@ -179,6 +182,11 @@ LOGGING = {
             'propagate': False,
         },
         'utils': {  # 앱별 커스텀 로거
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'chat': {  # 앱별 커스텀 로거
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
@@ -210,3 +218,16 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'users.TCDUser'
 
 CSRF_TRUSTED_ORIGINS = ['https://localhost','https://*.127.0.0.1']
+
+# asgi 설정
+ASGI_APPLICATION = "config.asgi.application"
+
+# 채널 레이어 설정
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
