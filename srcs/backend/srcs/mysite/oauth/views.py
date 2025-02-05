@@ -1,7 +1,7 @@
 import requests
 from django.shortcuts import redirect
 from django.http import HttpResponse, JsonResponse, FileResponse
-from .decorators import require_http_methods
+from utils.decorators import require_http_methods
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 
