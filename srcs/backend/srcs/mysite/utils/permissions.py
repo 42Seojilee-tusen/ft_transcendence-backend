@@ -17,4 +17,3 @@ from rest_framework.permissions import BasePermission
 class IsTwoFactorAuthenticated(BasePermission):
     def has_permission(self, request, view):
         return request.auth and request.auth.get('is_2fa_authenticated', False)
-        return request.auth.get('is_2fa_authenticated', False)
