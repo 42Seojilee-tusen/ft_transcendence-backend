@@ -1,8 +1,8 @@
 # serializers.py
 from rest_framework import serializers
-from .models import TCDUser
+from .models import CustomUser
 
-class TCDUserSerializer(serializers.ModelSerializer):
+class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TCDUser
-        fields = ['id', 'login', 'first_name', 'last_name', 'image_url']  # 필요한 필드만 선택
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'profile_image']  # 필요한 필드만 선택
