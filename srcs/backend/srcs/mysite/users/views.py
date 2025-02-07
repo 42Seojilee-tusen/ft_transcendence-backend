@@ -1,7 +1,8 @@
 from django.shortcuts import render
-from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import action
 from django.http import JsonResponse
 from rest_framework_simplejwt.tokens import AccessToken
 from django.shortcuts import get_object_or_404
@@ -13,17 +14,26 @@ import logging
 logger = logging.getLogger('users') 
 
 # Create your views here.
-class UserView(APIView):
-    authentication_classes = []
-    permission_classes = []
-    def get(self, request):
-        users = CustomUser.objects.all()  # QuerySet 가져오기
-        serializer = CustomUserSerializer(users, many=True)  # many=True 옵션
+
+class UserAuthViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    @action(detail=False, methods=['get'], url_path='')
+    def get_auth_user(self, request):
+        user = request.user
+        serializer = CustomUserSerializer(user)
         return Response(serializer.data)
 
 
-class UserAuthView(APIView):
-    def get(self, request):
-        user = request.user
+class UserViewSet(viewsets.ModelViewSet):
+    authentication_classes = []
+    permission_classes = []
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    # override the basic retrieve() to search user by username, not by primary key
+    def retrieve(self, request, pk=None):
+        user = get_object_or_404(CustomUser, username=pk)
         serializer = CustomUserSerializer(user)
         return Response(serializer.data)
