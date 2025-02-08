@@ -191,7 +191,7 @@ class TwoFactorView(APIView):
             access_token['is_2fa_authenticated'] =True
 
             response = Response({
-                'access_token': access_token
+                'access_token': str(access_token)
             })
 
             response.set_cookie(
