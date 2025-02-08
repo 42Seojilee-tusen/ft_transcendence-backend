@@ -22,8 +22,15 @@ class UserAuthViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='')
     def get_auth_user(self, request):
         user = request.user
-        serializer = CustomUserSerializer(user)
+        serializer = self.get_serializer(user)
         return Response(serializer.data)
+
+#    @action(detail=False, methods['patch'], url_path'')
+#    def patch_auth_user(self, request):
+#        user = request.user
+#        data = request.data
+#        serializer = CustomUserSerializer(user)
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -35,5 +42,5 @@ class UserViewSet(viewsets.ModelViewSet):
     # override the basic retrieve() to search user by username, not by primary key
     def retrieve(self, request, pk=None):
         user = get_object_or_404(CustomUser, username=pk)
-        serializer = CustomUserSerializer(user)
+        serializer = self.get_serializer(user)
         return Response(serializer.data)
