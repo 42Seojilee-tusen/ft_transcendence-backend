@@ -1,5 +1,22 @@
 services:
+  # 테스트할 땐 주석 해제
   # frontend:
+  #   init: true
+  #   build: ./srcs/frontend
+  #   image: frontend:42
+  #   container_name: frontend
+  #   environment:
+  #     DOMAIN_NAME: ${DOMAIN_NAME}
+  #     SSL_KEY: ${SSL_KEY}
+  #     SSL_CRT: ${SSL_CRT}
+
+  #   ports:
+  #     - "443:443"
+  #     - "80:80"
+  #   networks:
+  #     - ft_trancendence
+  #   volumes:
+  #     - ./srcs/frontend/codes:/usr/share/nginx/html
   backend:
     init: true
     build: ./srcs/backend
@@ -43,6 +60,14 @@ services:
       - ft_trancendence
     volumes:
       - ./srcs/database/srcs:/var/lib/postgresql/data
+  # 테스트할 땐 주석 해제
+  # redis:
+  #   init: true
+  #   image: redis:7
+  #   networks:
+  #     - ft_trancendence
+  #   ports:
+  #     - 6379:6379
 
 networks:
   ft_trancendence:
