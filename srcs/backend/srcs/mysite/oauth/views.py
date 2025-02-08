@@ -112,7 +112,7 @@ class TokenRefreshView(APIView):
     authentication_classes = []
     permission_classes = []
     def post(self, request):
-        old_refresh_token = request.COOKIE.get('refresh_token')
+        old_refresh_token = request.COOKIES.get('refresh_token')
         try:
             old_refresh_token = RefreshToken(old_refresh_token)
         except TokenError as e:
@@ -191,7 +191,7 @@ class TwoFactorView(APIView):
             access_token['is_2fa_authenticated'] =True
 
             response = Response({
-                'access_token': access_token
+                'access_token': str(access_token)
             })
 
             response.set_cookie(
