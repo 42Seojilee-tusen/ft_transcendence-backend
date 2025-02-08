@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'oauth',
     'chat',
     'daphne',
+    'game_records',
 ]
 
 INSTALLED_APPS += [
@@ -236,7 +237,11 @@ CHANNEL_LAYERS = {
         },
     },
 }
-
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels.layers.InMemoryChannelLayer",
+#     },
+# }
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
