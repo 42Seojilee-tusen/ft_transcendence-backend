@@ -35,6 +35,18 @@ class UserAuthViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'], url_path='follows')
+    def get_followings(self, request):
+        return Response({"detail": "test"})
+
+    @action(detail=False, methods=['post'], url_path='follows')
+    def post_followings(self, request):
+        return Response({"detail": "test"})
+
+    @action(detail=False, methods=['delete'], url_path='follows')
+    def post_followings(self, request):
+        return Response({"detail": "test"})
+
 
 class UserViewSet(viewsets.ModelViewSet):
     authentication_classes = []
