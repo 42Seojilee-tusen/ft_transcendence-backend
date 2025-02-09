@@ -53,7 +53,6 @@ class OneOnOneMatchViewSet(viewsets.ModelViewSet):
     # GET: READ
     @action(detail=False, methods=['get'], url_path='list')
     def get_matchlist(self, request):
-        print('why are you here')
         user = request.user
         matches = OneOnOneMatch.objects.filter(Q(player1=user) | Q(player2=user))
         serializer = self.get_serializer(matches, many=True, context={"request": request})
