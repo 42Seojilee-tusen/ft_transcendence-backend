@@ -1,12 +1,13 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.response import Response
 from .models import OneOnOneMatch
-from .serializers import OneOnOneSerializer
+from .serializers import OneOnOneMatchSerializer
+from django.db.models import Q
 
 # Create your views here.
 
-class OneOnOneMatchViewSet(viewsets.ModelViewSet):
 # total match history
 # "total_match_history": [
 # {
@@ -45,10 +46,15 @@ class OneOnOneMatchViewSet(viewsets.ModelViewSet):
 # 		    "result": 4,
 #       },
 # ],
-    queryset = OneOnOne.objects.all()
-    serializer_class = OneOnOneSerializer
+class OneOnOneMatchViewSet(viewsets.ModelViewSet):
+    queryset = OneOnOneMatch.objects.all()
+    serializer_class = OneOnOneMatchSerializer
 
     # GET: READ
-#    @action(detail=True, methods=['get'], url_path='list')
-    def get_matchlist(self, request, pk=None):
+    @action(detail=False, methods=['get'], url_path='list')
+    def get_matchlist(self, request):
+        print('why are you here')
         user = request.user
+        matches = OneOnOneMatch.objects.filter(Q(player1=user) | Q(player2=user))
+        serializer = self.get_serializer(matches, many=True, context={"request": request})
+        return Response(serializer.data)

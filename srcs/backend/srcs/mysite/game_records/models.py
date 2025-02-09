@@ -13,16 +13,13 @@ class OneOnOneMatch(models.Model):
     def match_type(self):
         return "배틀"
 
-    @property
-    def enemy(self, player):
+    def get_enemy(self, player):
         return player1 if player != player1 else player2
 
-    @property
-    def score(self, player):
+    def get_score(self, player):
         return [point1, point2] if player == player1 else [point2, point1]
 
-    @property
-    def result(self, player):
+    def get_result(self, player):
         if self.point1 == self.point2:
             return "tie"
         winner = self.player1 if self.point1 > self.point2 else self.player2
