@@ -130,5 +130,5 @@ class MatchHistorySerializer(serializers.ModelSerializer):
             many=True,
             context={'user': obj}
             ).data
-        return one_on_one_serialized + tournament_serialized
-#        return sorted(one_on_one_serialized + tournament_serialized, key=lambda x: x["date"], reverse=True)
+#        return one_on_one_serialized + tournament_serialized
+        return sorted(one_on_one_serialized + tournament_serialized, key=lambda x: x["date"], reverse=True)
