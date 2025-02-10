@@ -4,42 +4,6 @@ from rest_framework.response import Response
 from .models import OneOnOneMatch, UserOneOnOneGameRecord, TournamentMatch, UserTournamentGameRecord
 from users.models import CustomUser
 
-# {
-#    "total_match_history": [
-#	      { #		        "match_type": "배틀", #		        "total_match": 100,
-#		        "win": 50,
-#		        "lose": 50,
-#	      }
-#	      {
-#		        "match_type": "토너먼트",
-#		        "total_match": 100,
-#		        "1st": 25,
-#		        "2nd": 25,
-#		        "3rd": 25,
-#		        "4th": 25,
-#	      }
-#    ],
-#    "match_history": [
-#		    {
-#		  	    "date": [2025, 2, 7],
-#		        "match_type": "배틀",
-#				"enemy": "seojilee",
-#				"score": [4, 2], // my score가 배열의 시작
-#				"result": "win",
-#		    },
-#		    {
-#			    "date": [2025, 2, 9],
-#				"match_type": "토너먼트",
-#				"enemy": {
-#					    "player1": "seojilee",
-#					    "player2": "taejeong",
-#					    "player3": "hyoengsh",
-#					    "player4": "junhapar",
-#				},
-#				"result": "lose", // win or lose
-#		    },
-#    ],
-#}
 class OneOnOneMatchSerializer(serializers.ModelSerializer):
     date = serializers.SerializerMethodField()
     match_type = serializers.SerializerMethodField()
@@ -109,11 +73,12 @@ class TournamentMatchSerializer(serializers.ModelSerializer):
         return "win"
 
 class MatchHistorySerializer(serializers.ModelSerializer):
+    total_match_history = serializers.SerializerMethodField()
     match_history = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['match_history']
+        fields = ['total_match_history', 'match_history']
 
     # obj -> CustomUser
     def get_match_history(self, obj):
@@ -131,3 +96,24 @@ class MatchHistorySerializer(serializers.ModelSerializer):
             context={'user': obj}
             ).data
         return sorted(one_on_one_serialized + tournament_serialized, key=lambda x: x["date"], reverse=True)
+
+    def get_total_match_history(self, obj):
+        one_on_one_games = UserOneOnOneGameRecord.objects.filter(user=obj)
+        ooo_total_count = one_on_one_games.count()
+        ooo_win_count = sum(
+                1 for game in one_on_one_games
+                if OneOnOneMatchSerializer(game.one_on_one_match_id, context={'user': obj}).get_result(game.one_on_one_match_id) == "win"
+                )
+        ooo_lose_count = ooo_total_count - ooo_win_count;
+        one_on_one = {"match_type": "배틀", "total_match": ooo_total_count, "win": ooo_win_count, "lose": ooo_lose_count}
+
+        tournament_games = UserTournamentGameRecord.objects.filter(user=obj)
+        tour_total_count = tournament_games.count()
+        tour_win_count = sum(
+                1 for game in tournament_games
+                if TournamentMatchSerializer(game.tournament_match_id, context={'user': obj}).get_result(game.tournament_match_id) == "win"
+                )
+        tour_lose_count = tour_total_count - tour_win_count
+        tournament = {"match_type": "토너먼트", "total_match": tour_total_count, "win": tour_win_count, "lose": tour_lose_count}
+
+        return [one_on_one, tournament]

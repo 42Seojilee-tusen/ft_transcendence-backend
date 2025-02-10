@@ -22,7 +22,6 @@ class MatchViewSet(viewsets.ViewSet):
         if not serializer.data.get('match_history'):
             return Response({"error": "No data"}, status=400)
         return Response(serializer.data)
-
 #{
 #    "total_match_history": [
 #	      {
