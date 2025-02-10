@@ -18,6 +18,7 @@ re:
 
 rm_db:
 	rm -rf srcs/database/srcs
+	rm -rf srcs/backend/srcs/mysite/images
 
 freeze:
 	docker exec django pip freeze > ./srcs/backend/requirements.txt.local

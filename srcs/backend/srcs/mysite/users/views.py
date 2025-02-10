@@ -1,16 +1,12 @@
 from django.shortcuts import render
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.decorators import action
 from django.http import JsonResponse
-from rest_framework_simplejwt.tokens import AccessToken
 from django.shortcuts import get_object_or_404
-from rest_framework_simplejwt.exceptions import TokenError
 from utils.validation import check_json_data
 from users.models import CustomUser
 from .serializers import CustomUserSerializer
-
 import logging
 logger = logging.getLogger('users') 
 
@@ -35,6 +31,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # override the basic retrieve() to search user by username, not by primary key
     def retrieve(self, request, pk=None):
-        user = get_object_or_404(CustomUser, username=pk)
-        serializer = CustomUserSerializer(user)
+        try:
+            user = CustomUser.objects.get(username=pk)
+            serializer = CustomUserSerializer(user)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=400)
         return Response(serializer.data)
