@@ -36,8 +36,9 @@ INSTALLED_APPS = [
     'users',
     'oauth',
     'chat',
-    'daphne',
     'game_records',
+    'follows',
+    'daphne',
 ]
 
 INSTALLED_APPS += [

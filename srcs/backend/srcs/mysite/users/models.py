@@ -5,8 +5,3 @@ class CustomUser(AbstractUser):
     id = models.IntegerField(primary_key=True, blank=True,help_text="유저 고유 id")
     email = models.CharField(max_length=100, blank=True, help_text="인트라 이메일")
     profile_image = models.FileField(upload_to='profiles/', null=True, help_text="프로필 이미지 경로")
-
-class Follows(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey(CustomUser, related_name="owner_user", on_delete=models.CASCADE)
-    follow_user = models.ForeignKey(CustomUser, related_name="follow_user", on_delete=models.CASCADE)
