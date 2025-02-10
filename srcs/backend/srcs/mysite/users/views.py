@@ -34,8 +34,6 @@ class UserViewSet(viewsets.ModelViewSet):
         try:
             user = CustomUser.objects.get(username=pk)
             serializer = CustomUserSerializer(user)
-        except Exception as e:
-            return Response({'error': str(e)})
-        # user = get_object_or_404(CustomUser, username=pk)
-        # serializer = CustomUserSerializer(user)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=400)
         return Response(serializer.data)
