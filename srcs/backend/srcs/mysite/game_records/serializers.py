@@ -63,7 +63,7 @@ class OneOnOneMatchSerializer(serializers.ModelSerializer):
         user = self.context.get('user')
         player1 = obj.player1
         player2 = obj.player2
-        return player1.username if player1.username != user.username else player2.username
+        return player1 if player1 != user else player2
 
     def get_score(self, obj):
         user = self.context.get('user')
