@@ -114,7 +114,9 @@ class TokenRefreshView(APIView):
     def post(self, request):
         old_refresh_token = request.COOKIES.get('refresh_token')
         try:
+            logger.debug(old_refresh_token)
             old_refresh_token = RefreshToken(old_refresh_token)
+            user = CustomUser.objects.get(id=old_refresh_token['user_id'])
         except TokenError as e:
             error_message = {
                 "detail": "Given token not valid for any token type",
@@ -128,7 +130,10 @@ class TokenRefreshView(APIView):
                 ]
             }
             return Response(error_message, status=401)
-        user = CustomUser.objects.get(id=old_refresh_token['user_id'])
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=401)
+        except Exception as e:
+            return Response({"error": str(e)}, status=401)
 
         new_refresh_token = RefreshToken.for_user(user)
         new_refresh_token['is_2fa_authenticated'] = old_refresh_token['is_2fa_authenticated']
