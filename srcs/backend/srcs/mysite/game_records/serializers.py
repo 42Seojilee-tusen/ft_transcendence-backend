@@ -57,7 +57,6 @@ class TournamentMatchSerializer(serializers.ModelSerializer):
         return '토너먼트'
 
     def get_enemy(self, obj):
-#        user = self.context.get('user')
        return {
                "player1": obj.round1_player1.username,
                "player2": obj.round1_player2.username,
@@ -65,6 +64,7 @@ class TournamentMatchSerializer(serializers.ModelSerializer):
                "player4": obj.round2_player2.username
                }
 
+    # 3round -> 결승전으로?
     def get_result(self, obj):
         user = self.context.get('user')
         winner = obj.round3_player1 if obj.round3_point1 > obj.round3_point2 else obj.round3_player2
@@ -97,23 +97,21 @@ class MatchHistorySerializer(serializers.ModelSerializer):
             ).data
         return sorted(one_on_one_serialized + tournament_serialized, key=lambda x: x["date"], reverse=True)
 
+    def calculate_game_statistics(self, user, games, match_type, match_serializer_class, match_field_name):
+        total_count = games.count()
+        win_count = sum(
+                1 for game in games
+                if match_serializer_class(getattr(game, match_field_name), context={'user': user}).get_result(getattr(game, match_field_name)) == "win"
+                )
+        lose_count = total_count - win_count
+
+        return {"match_type": match_type, "total_match": total_count, "win": win_count, "lose": lose_count}
+
     def get_total_match_history(self, obj):
         one_on_one_games = UserOneOnOneGameRecord.objects.filter(user=obj)
-        ooo_total_count = one_on_one_games.count()
-        ooo_win_count = sum(
-                1 for game in one_on_one_games
-                if OneOnOneMatchSerializer(game.one_on_one_match_id, context={'user': obj}).get_result(game.one_on_one_match_id) == "win"
-                )
-        ooo_lose_count = ooo_total_count - ooo_win_count;
-        one_on_one = {"match_type": "배틀", "total_match": ooo_total_count, "win": ooo_win_count, "lose": ooo_lose_count}
+        one_on_one = self.calculate_game_statistics(obj, one_on_one_games, "배틀", OneOnOneMatchSerializer, "one_on_one_match_id")
 
         tournament_games = UserTournamentGameRecord.objects.filter(user=obj)
-        tour_total_count = tournament_games.count()
-        tour_win_count = sum(
-                1 for game in tournament_games
-                if TournamentMatchSerializer(game.tournament_match_id, context={'user': obj}).get_result(game.tournament_match_id) == "win"
-                )
-        tour_lose_count = tour_total_count - tour_win_count
-        tournament = {"match_type": "토너먼트", "total_match": tour_total_count, "win": tour_win_count, "lose": tour_lose_count}
+        tournament = self.calculate_game_statistics(obj, tournament_games, "토너먼트", TournamentMatchSerializer, "tournament_match_id")
 
         return [one_on_one, tournament]
