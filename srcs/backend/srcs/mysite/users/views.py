@@ -7,7 +7,6 @@ from django.shortcuts import get_object_or_404
 from utils.validation import check_json_data
 from users.models import CustomUser
 from .serializers import CustomUserSerializer
-
 import logging
 logger = logging.getLogger('users') 
 
@@ -17,7 +16,7 @@ class UserAuthViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
 
-    @action(detail=False, methods=['get'], url_path='')
+    @action(detail=False, methods=['get'], url_path='get-user')
     def get_auth_user(self, request):
         user = request.user
         serializer = CustomUserSerializer(user)
