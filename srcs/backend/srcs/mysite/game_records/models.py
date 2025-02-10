@@ -7,33 +7,34 @@ class OneOnOneMatch(models.Model):
     player2 = models.ForeignKey(CustomUser, related_name="player2_match", on_delete=models.CASCADE)
     point1 = models.IntegerField(default=0, null=False, blank=False)
     point2 = models.IntegerField(default=0, null=False, blank=False)
-    date = models.DateTimeField(auto_now_add=True)
-
-    @property
-    def match_type(self):
-        return "배틀"
-
-    def get_enemy(self, player):
-        return player1 if player != player1 else player2
-
-    def get_score(self, player):
-        return [point1, point2] if player == player1 else [point2, point1]
-
-    def get_result(self, player):
-        if self.point1 == self.point2:
-            return "tie"
-        winner = self.player1 if self.point1 > self.point2 else self.player2
-        return "win" if winner == player else "lose"
+    match_day = models.DateTimeField(auto_now_add=True)
 
 class TournamentMatch(models.Model):
     id = models.BigAutoField(primary_key=True)
-    one_on_one_match_id = models.ForeignKey(OneOnOneMatch, null=True, on_delete=models.CASCADE)
-    tournament = models.IntegerField(null=False, blank=False)
-    round = models.IntegerField(null=False, blank=False)
+    round1_player1 = models.ForeignKey(CustomUser, related_name="round1_player1_match", on_delete=models.CASCADE)
+    round1_player2 = models.ForeignKey(CustomUser, related_name="round1_player2_match", on_delete=models.CASCADE)
+    round1_point1 = models.IntegerField(default=0, null=False, blank=False)
+    round1_point2 = models.IntegerField(default=0, null=False, blank=False)
+    round2_player1 = models.ForeignKey(CustomUser, related_name="round2_player1_match", on_delete=models.CASCADE)
+    round2_player2 = models.ForeignKey(CustomUser, related_name="round2_player2_match", on_delete=models.CASCADE)
+    round2_point1 = models.IntegerField(default=0, null=False, blank=False)
+    round2_point2 = models.IntegerField(default=0, null=False, blank=False)
+    round3_player1 = models.ForeignKey(CustomUser, related_name="round3_player1_match", on_delete=models.CASCADE)
+    round3_player2 = models.ForeignKey(CustomUser, related_name="round3_player2_match", on_delete=models.CASCADE)
+    round3_point1 = models.IntegerField(default=0, null=False, blank=False)
+    round3_point2 = models.IntegerField(default=0, null=False, blank=False)
+    round4_player1 = models.ForeignKey(CustomUser, related_name="round4_player1_match", on_delete=models.CASCADE)
+    round4_player2 = models.ForeignKey(CustomUser, related_name="round4_player2_match", on_delete=models.CASCADE)
+    round4_point1 = models.IntegerField(default=0, null=False, blank=False)
+    round4_point2 = models.IntegerField(default=0, null=False, blank=False)
     match_day = models.DateTimeField(auto_now_add=True)
 
-class UserGameRecord(models.Model):
+class UserOneOnOneGameRecord(models.Model):
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    one_on_one_match_id = models.ForeignKey(OneOnOneMatch, null=True, on_delete=models.CASCADE)
-    tournament_match_id = models.ForeignKey(TournamentMatch, null=True, on_delete=models.CASCADE)
+    one_on_one_match_id = models.ForeignKey(OneOnOneMatch, null=False, on_delete=models.CASCADE)
+    
+class UserTournamentGameRecord(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    tournament_match_id = models.ForeignKey(TournamentMatch, null=False, on_delete=models.CASCADE)
