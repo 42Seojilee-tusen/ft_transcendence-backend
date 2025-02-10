@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/oauth/', include('oauth.urls')),
     path('api/users/', include('users.urls')),
+    path('api/follows/', include('follows.urls')),
     path('chat/', include('chat.urls')),
     re_path(r'^api/images/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]

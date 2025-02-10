@@ -10,6 +10,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from utils.validation import check_json_data
 from users.models import CustomUser
 from .serializers import CustomUserSerializer
+
 import logging
 logger = logging.getLogger('users') 
 
