@@ -81,8 +81,8 @@ class TournamentMatchSerializer(serializers.ModelSerializer):
     result = serializers.SerializerMethodField()
 
     class Meta:
-        model = OneOnOneMatch
-        fields = ['date', 'match_type', 'enemy', 'score', 'result']
+        model = TournamentMatch
+        fields = ['date', 'match_type', 'enemy', 'result']
 
     # obj -> TournamentMatch
     def get_date(self, obj):
@@ -95,15 +95,15 @@ class TournamentMatchSerializer(serializers.ModelSerializer):
     def get_enemy(self, obj):
 #        user = self.context.get('user')
        return {
-               "player1": round1_player1.username,
-               "player2": round1_player2.username,
-               "player3": round2_player1.username,
-               "player4": round2_player2.username
+               "player1": obj.round1_player1.username,
+               "player2": obj.round1_player2.username,
+               "player3": obj.round2_player1.username,
+               "player4": obj.round2_player2.username
                }
 
     def get_result(self, obj):
         user = self.context.get('user')
-        winner = round3_player1 if round3_point1 > round3_point2 else round3_player2
+        winner = obj.round3_player1 if obj.round3_point1 > obj.round3_point2 else obj.round3_player2
         if user != winner:
             return "lose"
         return "win"
