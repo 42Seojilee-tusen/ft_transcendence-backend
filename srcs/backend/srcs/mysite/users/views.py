@@ -16,7 +16,7 @@ class UserAuthViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
 
-    @action(detail=False, methods=['get'], url_path='get-user')
+    @action(detail=False, methods=['get'], url_path='')
     def get_auth_user(self, request):
         user = request.user
         serializer = CustomUserSerializer(user)
