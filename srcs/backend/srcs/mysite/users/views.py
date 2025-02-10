@@ -61,19 +61,19 @@ class UserFollowView(APIView):
         try:
             follow_user = CustomUser.objects.get(username=username)
         except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User not found"}, status=400)
         user = request.user
         
         if user == follow_user:
-            return Response({'error': 'Same user'}, status=404)
+            return Response({'error': 'Same user'}, status=400)
 
         # 이미 친구로 추가된 상태인지 확인
         if Follows.objects.filter(user=user, follow_user=follow_user).exists():
-            return Response({"error": "Already friends"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Already friends"}, status=400)
 
         # 친구 관계 생성
         Follows.objects.create(user=user, follow_user=follow_user)
-        return Response({"message": f"{follow_user.username} has been added as a friend."}, status=status.HTTP_201_CREATED)
+        return Response({"message": f"{follow_user.username} has been added as a friend."}, status=200)
     
     def delete(self, request):
         check_json_data(request, ['username'])
@@ -83,15 +83,14 @@ class UserFollowView(APIView):
         try:
             follow_user = CustomUser.objects.get(username=username)
         except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "User not found"}, status=400)
 
         try:
             delete_follow_user = Follows.objects.get(user=user, follow_user=follow_user)
         except Follows.DoesNotExist:
-            return Response({"error": "not follow"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "not follow"}, status=400)
 
-        # 친구 관계 생성
+        # 친구 관계 삭제
         delete_follow_user.delete()
-        # Follows.objects.delete(user=user, follow_user=follow_user)
-        return Response({"message": f"{follow_user.username} has been deleted as a friend."}, status=status.HTTP_201_CREATED)
+        return Response({"message": f"{follow_user.username} has been deleted as a friend."}, status=200)
         
