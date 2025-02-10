@@ -9,4 +9,5 @@ router.register(r'\w+', views.UserViewSet, basename='user-detail')
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('auth/follows', views.UserFollowView.as_view())
 ]
