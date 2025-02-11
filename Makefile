@@ -13,7 +13,6 @@ restart:
 	docker compose restart
 
 re:
-	make rm_db
 	make down
 	make up
 
