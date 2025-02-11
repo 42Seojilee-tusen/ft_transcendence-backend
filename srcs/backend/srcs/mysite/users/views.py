@@ -13,7 +13,7 @@ logger = logging.getLogger('users')
 
 # Create your views here.
 
-class UserAuthViewSet(APIView):
+class UserAuthView(APIView):
     def get(self, request):
         user = request.user
         serializer = CustomUserSerializer(user)
@@ -23,7 +23,7 @@ class UserAuthViewSet(APIView):
         user = request.user
         data = request.data
         if not data:
-            return Response({'error': 'The request body is empty'})
+            return Response({'error': 'The request body is empty.'}, status=400)
         serializer = CustomUserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
