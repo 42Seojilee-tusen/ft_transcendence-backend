@@ -22,11 +22,13 @@ class UserAuthViewSet(APIView):
     def patch(self, request):
         user = request.user
         data = request.data
+        if not data:
+            return Response({'error': 'The request body is empty'})
         serializer = CustomUserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response({"error": "Cannot update user"}, status=400)
+        return Response({'error': 'Cannot update user'}, status=400)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -41,7 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
         partial_name = request.GET.get('partial_name')
         serializer = CustomUserPatternSerializer(partial_name)
         if not serializer.data.get('user_list'):
-            return Response({"error": "User not found"}, status=400)
+            return Response({'error': 'User not found'}, status=400)
         return Response(serializer.data)
 
     # override the basic retrieve() to search user by username, not by primary key
@@ -50,5 +52,5 @@ class UserViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(username=pk)
             serializer = CustomUserSerializer(user)
         except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=400)
+            return Response({'error': 'User not found'}, status=400)
         return Response(serializer.data)
