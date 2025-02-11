@@ -7,10 +7,19 @@ from users.models import CustomUser
 from .serializers import MatchHistorySerializer
 
 # Create your views here.
+class MatchAuthViewSet(viewsets.ViewSet):
+    #/api/games/me/
+    def list(self, request):
+        user = request.user
+        serializer = MatchHistorySerializer(user)
+        if not serializer.data.get('match_history'):
+            return Response({"error": "Data not found"}, status=400)
+        return Response(serializer.data)
+
 class MatchViewSet(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = []
-    
+
     #/api/games/[username]/
     def retrieve(self, request, pk=None):
         try:
