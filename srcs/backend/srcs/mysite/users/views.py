@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.http import JsonResponse
@@ -12,14 +13,20 @@ logger = logging.getLogger('users')
 
 # Create your views here.
 
-class UserAuthViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
-
-    def list(self, request):
+class UserAuthViewSet(APIView):
+    def get(self, request):
         user = request.user
         serializer = CustomUserSerializer(user)
         return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        serializer = CustomUserSerializer(user, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({"error": "Cannot update user"}, status=400)
 
 
 class UserViewSet(viewsets.ModelViewSet):
