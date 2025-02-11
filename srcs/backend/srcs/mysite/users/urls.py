@@ -4,7 +4,6 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'me', views.UserAuthViewSet)
-#router.register(r'find', views.UserViewSet)
 router.register('', views.UserViewSet, basename='user-list')
 router.register(r'\w+', views.UserViewSet, basename='user-detail')
 
