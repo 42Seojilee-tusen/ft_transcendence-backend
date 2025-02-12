@@ -8,7 +8,7 @@ class OneOnOneMatch(models.Model):
     point1 = models.IntegerField(default=0, null=False, blank=False)
     point2 = models.IntegerField(default=0, null=False, blank=False)
     match_day = models.DateTimeField(auto_now_add=True)
-a
+
 class TournamentMatch(models.Model):
     id = models.BigAutoField(primary_key=True)
     round1_player1 = models.ForeignKey(CustomUser, related_name="round1_player1_match", on_delete=models.CASCADE)
