@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.http import JsonResponse
@@ -12,14 +13,22 @@ logger = logging.getLogger('users')
 
 # Create your views here.
 
-class UserAuthViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
-    serializer_class = CustomUserSerializer
-
-    def list(self, request):
+class UserAuthView(APIView):
+    def get(self, request):
         user = request.user
         serializer = CustomUserSerializer(user)
         return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        if not data:
+            return Response({'error': 'The request body is empty.'}, status=400)
+        serializer = CustomUserSerializer(user, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response({'error': 'Cannot update user'}, status=400)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -34,7 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
         partial_name = request.GET.get('partial_name')
         serializer = CustomUserPatternSerializer(partial_name)
         if not serializer.data.get('user_list'):
-            return Response({"error": "User not found"}, status=400)
+            return Response({'error': 'User not found'}, status=400)
         return Response(serializer.data)
 
     # override the basic retrieve() to search user by username, not by primary key
@@ -43,5 +52,5 @@ class UserViewSet(viewsets.ModelViewSet):
             user = CustomUser.objects.get(username=pk)
             serializer = CustomUserSerializer(user)
         except CustomUser.DoesNotExist:
-            return Response({"error": "User not found"}, status=400)
+            return Response({'error': 'User not found'}, status=400)
         return Response(serializer.data)
