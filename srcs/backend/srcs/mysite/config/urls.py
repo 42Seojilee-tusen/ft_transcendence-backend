@@ -10,6 +10,5 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/follows/', include('follows.urls')),
     path('api/games/', include('game_records.urls')),
-    path('api/chat/', include('chat.urls')),
     re_path(r'^api/images/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
