@@ -3,6 +3,7 @@ import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
+from chat.match import MatchManager
 import uuid
 
 import logging
@@ -12,9 +13,10 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
     # 접속한 클라이언트 수
     # id: 수
     active_users = {}
+
     # 게임 대기중인 유저
     # 채널이름, 유저 객체
-    waiting_users = []
+    match_manager = MatchManager()
     
     async def connect(self):
         self.user = self.scope["user"]
@@ -35,18 +37,23 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             # 웹소켓 접속을 수락
             await self.accept()
             
-            # 게임 대기중인 유저에 자신을 추가
-            self.waiting_users.append({'channel_name': self.channel_name, 'user': self.user})
-            # 게임 대기중인 유저가 2명 이상이면 매칭 시작
-            if len(self.waiting_users) >= 2:
-                user1 = self.waiting_users.pop(0)
-                user2 = self.waiting_users.pop(0)
+            matching_user = self.match_manager.matching()
+            # 매칭이 되면 그룹 생성
+            if matching_user:
                 self.group_name = f"group_{uuid.uuid4().hex}"
-                await self.channel_layer.group_add(self.group_name, user1['channel_name'])
-                await self.channel_layer.group_add(self.group_name, user2['channel_name'])
+                logger.debug("="*20)
+                logger.debug(self.group_name)
+                logger.debug("="*20)
+                
+                await self.channel_layer.group_add(self.group_name, self.channel_name)
+                await self.channel_layer.group_add(self.group_name, matching_user['channel_name'])
                 await self.channel_layer.group_send(
                     self.group_name, {'type':'matching.on', "message": "매칭이 잡혔습니다", "group_name": self.group_name}
                 )
+            # 매칭이 안되면 대기중인 유저에 자신을 추가
+            elif matching_user is None:
+                self.match_manager.add_waiting(self.channel_name, self.user)
+
         except Exception as e:
             logger.error(str(e))
             await self.close(code=4001)
@@ -57,6 +64,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         if self.user is None or isinstance(self.user, AnonymousUser):
             logger.error("등록이 안된 유저입니다.")
             return
+
         # 유저수를 1 감소
         # 만약 내가 마지막 유저였다면 해당 세트를 삭제
         self.active_users[self.user.id] -= 1
@@ -69,28 +77,54 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(
                 self.group_name, {'type':'matching.off', "message": "매칭이 끊겼습니다"}
             )
-            # 본인을 그룹에서 제거
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
             # 자신의 그룹 이름을 None으로 설정
             self.group_name = None
+
         # 대기중인 유저 목록에서 자기자신 제거
-        for i, user in enumerate(self.waiting_users):
-            if user['channel_name'] == self.channel_name:
-                del self.waiting_users[i]
-                break  # 일치하는 유저를 찾았으면 반복 종료
+        self.match_manager.del_waiting(self.channel_name)
 
     # Receive message from WebSocket
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if data.get("message"):
-            message = f"{self.username}: {data.get("message")}"
-            await self.send(text_data=json.dumps({"message": message}))
+        if not data.get('type'):
+            logger.debug("type is not define")
+            return
+        if data.get('type') == "chat":
+            if self.group_name is None:
+                return
+            message = f"{data.get("message")}"
+            data = {
+                'type': 'chat.send',
+                'username': self.user.username,
+                'message': message
+            }
+            await self.channel_layer.group_send(
+                self.group_name, data
+            )
 
     async def matching_on(self, event):
         message = event['message']
         self.group_name = event['group_name']
-        await self.send(text_data=json.dumps({"message": message}))
+        text_data = json.dumps({
+            'username': 'system',
+            'message': message,
+        })
+        await self.send(text_data=text_data)
 
     async def matching_off(self, event):
         message = event['message']
-        await self.send(text_data=json.dumps({"message": message}))
+        text_data = json.dumps({
+            'username': 'system',
+            'message': message,
+        })
+        await self.send(text_data=text_data)
+
+    async def chat_send(self, event):
+        username = event['username'] 
+        message = event['message']
+        text_data = json.dumps({
+            'username': username,
+            'message': message,
+        })
+        await self.send(text_data=text_data)
