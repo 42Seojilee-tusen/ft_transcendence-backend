@@ -21,17 +21,14 @@ from utils.channelsmiddleware import JWTAuthMiddlewareStack
 
 from chat.routing import websocket_urlpatterns
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 
-from chat.routing import websocket_urlpatterns
-
-application = ProtocolTypeRouter(
-    {
-        "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(
-            AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
-        ),
-    }
-)
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+	"websocket": AllowedHostsOriginValidator(
+		# AuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+		JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+	),
+    # Just HTTP for now. (We can add other protocols later.)
+})
