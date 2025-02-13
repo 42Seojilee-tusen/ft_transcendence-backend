@@ -47,6 +47,15 @@ class TokenView(APIView):
     authentication_classes = []
     permission_classes = []
 
+    def __generate_unique_username(self, base_username):
+        # Check if the username exists and append a number if it does
+        username = base_username
+        counter = 1
+        while CustomUser.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"  # Append the counter to the username
+            counter += 1
+        return username
+
     def post(self, request):
         check_json_data(request, ['code'])
         code = request.data.get('code')
@@ -73,11 +82,13 @@ class TokenView(APIView):
             return Response(api_response.json(), status=api_response.status_code)
         api_data = api_response.json()
 
-        user, created = CustomUser.objects.get_or_create(
-            id = api_data['id'],
-            username = api_data['login'],
-            email = api_data['email'],
-        )
+        user = CustomUser.objects.filter(id=api_data['id']).first() # to prevent DoNotExist
+        if not user:
+            user = CustomUser.objects.create(
+                id = api_data['id'],
+                username = self.__generate_unique_username(api_data['login']),
+                email = api_data['email']
+            )
 
         file_name = f'_{user.id}.png'
         file_path = user.profile_image.field.upload_to + '/' + file_name
