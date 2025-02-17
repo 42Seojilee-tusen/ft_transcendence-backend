@@ -101,11 +101,11 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                             logger.debug(f"Game loop for {self.group_name} cancelled.")
                     logger.debug(f"GameManager for {self.group_name} deleted.")
                 except Exception as e:
-                    logger.debug("game task cancel error: " + e)
+                    logger.debug("game task cancel error: " + str(e))
             # 자신의 그룹 이름을 None으로 설정
             self.group_name = None
         except Exception as e:
-            logger.debug("group discard error: " + e)
+            logger.debug("group discard error: " + str(e))
 
     # Receive message from WebSocket
     async def receive(self, text_data):
@@ -136,12 +136,14 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 paddle_speed = data['paddle_speed']
                 paddle_xsize = data['paddle_xsize']
                 paddle_ysize = data['paddle_ysize']
+                ball_speed = data['ball_speed']
+                ball_radius = data['ball_radius']
                 game_group = self.game_groups.get(self.group_name, None)
-
                 if self.game_groups[self.group_name].game_manager is None:
-                    game_group.make_game(width, height, paddle_speed, paddle_xsize, paddle_ysize)
+                    game_group.make_game(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
                 if self.game_groups[self.group_name].task is None:
                     game_group.task = asyncio.create_task(self.run_game_loop(game_group.game_manager))
+                logger.debug(game_group.task)
             case "move_paddle":
                 if self.group_name is None:
                     return
@@ -162,7 +164,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 self.group_name,
                 {
                     "type": "send.game.state",
-                    "paddles": game_state,
+                    "game_state": game_state,
                 }
             )
             await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
@@ -171,7 +173,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         """게임 상태를 웹소켓으로 클라이언트에 전송"""
         text_data = json.dumps({
             'type': 'game_update', 
-            'paddles': event["paddles"]
+            'game_state': event["game_state"]
         })
         # text_data = json.dumps(event["paddles"])
         await self.send(text_data=text_data)
