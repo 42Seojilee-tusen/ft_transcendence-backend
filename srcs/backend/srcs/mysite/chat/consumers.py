@@ -3,7 +3,9 @@ import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
-from chat.match import MatchManager
+from chat.matchmanager import MatchManager
+
+import asyncio
 import uuid
 
 import logging
@@ -12,11 +14,16 @@ logger = logging.getLogger('chat')
 class GameBattleConsumer(AsyncWebsocketConsumer):
     # 접속한 클라이언트 수
     # id: 수
-    active_users = {}
+    active_channels = {}
 
     # 게임 대기중인 유저
     # 채널이름, 유저 객체
     match_manager = MatchManager()
+    
+    # 그룹 매니저
+    # 그룹 이름으로 구분
+    # GameGroup 객체가 저장됨
+    game_groups = {}
     
     async def connect(self):
         self.user = self.scope["user"]
@@ -28,31 +35,28 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 logger.error("User not authenticated")
                 raise Exception('User not authenticated')
             # 유저의 수를 증가
-            self.active_users[self.user.id] = self.active_users.get(self.user.id, 0) + 1
-            # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
-            # if self.channel_name in self.active_users and self.active_users[self.channel_name] > 1:
+            self.active_channels[self.user.id] = self.active_channels.get(self.user.id, 0) + 1
+            
+            # # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
+            # if self.channel_name in self.active_channels and self.active_channels[self.channel_name] > 1:
             #     logger.error(f"{self.user.username} is multi client error")
             #     raise Exception('multi client error')
             
             # 웹소켓 접속을 수락
             await self.accept()
             
-            matching_user = self.match_manager.matching()
-            # 매칭이 되면 그룹 생성
-            if matching_user:
-                self.group_name = f"group_{uuid.uuid4().hex}"
-                logger.debug("="*20)
-                logger.debug(self.group_name)
-                logger.debug("="*20)
-                
-                await self.channel_layer.group_add(self.group_name, self.channel_name)
-                await self.channel_layer.group_add(self.group_name, matching_user['channel_name'])
+            # 매칭이 되면 GameGroup 반환
+            game_group = self.match_manager.matching(self.channel_name, self.user)
+            
+            # 매칭이되면 웹소켓 그룹 생성
+            if game_group is not None:
+                self.group_name = game_group.group_name
+                self.game_groups[self.group_name] = game_group
+                for channel_name in self.game_groups[self.group_name].channels:
+                    await self.channel_layer.group_add(self.group_name, channel_name)
                 await self.channel_layer.group_send(
                     self.group_name, {'type':'matching.on', "message": "매칭이 잡혔습니다", "group_name": self.group_name}
                 )
-            # 매칭이 안되면 대기중인 유저에 자신을 추가
-            elif matching_user is None:
-                self.match_manager.add_waiting(self.channel_name, self.user)
 
         except Exception as e:
             logger.error(str(e))
@@ -62,61 +66,143 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # JWT토큰 인증 오류 유저
         if self.user is None or isinstance(self.user, AnonymousUser):
-            logger.error("등록이 안된 유저입니다.")
+            logger.error(f"{self.user.username}은 JWT인증이 안된 유저입니다.")
             return
 
         # 유저수를 1 감소
         # 만약 내가 마지막 유저였다면 해당 세트를 삭제
-        self.active_users[self.user.id] -= 1
-        if self.active_users[self.user.id] <= 0:
-            self.active_users.pop(self.user.id, None)
-        
-        # 그룹이름이 존재한다면
-        if self.group_name:
-            # 매칭되어있던 유저들에게 접속을 종료했음을 알림
-            await self.channel_layer.group_send(
-                self.group_name, {'type':'matching.off', "message": "매칭이 끊겼습니다"}
-            )
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
-            # 자신의 그룹 이름을 None으로 설정
-            self.group_name = None
+        self.active_channels[self.user.id] -= 1
+        if self.active_channels[self.user.id] <= 0:
+            self.active_channels.pop(self.user.id, None)
 
         # 대기중인 유저 목록에서 자기자신 제거
         self.match_manager.del_waiting(self.channel_name)
 
+        # 참가한 그룹이름이 존재한다면
+        # if self.group_name:
+        try:
+            # 매칭되어있던 유저들에게 접속을 종료했음을 알림
+            await self.channel_layer.group_send(
+                self.group_name, {'type':'matching.off', "message": f"{self.user.username}의 매칭이 끊겼습니다"}
+            )
+            # 그룹에서 자기자신 삭제 후, 그룹 인원 수를 줄임.
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            self.game_groups[self.group_name].user_count -= 1
+            # 아무도 남지 않았다면 실행중인 게임그룹 삭제
+            if self.game_groups[self.group_name].user_count <= 0:
+                # 셋에서 게임 그룹 삭제
+                game_group = self.game_groups.pop(self.group_name, None)
+                try:
+                    if game_group.task:
+                        game_group.task.cancel()  # 태스크 취소
+                        try:
+                            await game_group.task  # 태스크가 종료될 때까지 대기
+                        except asyncio.CancelledError:
+                            logger.debug(f"Game loop for {self.group_name} cancelled.")
+                    logger.debug(f"GameManager for {self.group_name} deleted.")
+                except Exception as e:
+                    logger.debug("game task cancel error: " + e)
+            # 자신의 그룹 이름을 None으로 설정
+            self.group_name = None
+        except Exception as e:
+            logger.debug("group discard error: " + e)
+
     # Receive message from WebSocket
     async def receive(self, text_data):
         data = json.loads(text_data)
+
         if not data.get('type'):
             logger.debug("type is not define")
             return
-        if data.get('type') == "chat":
-            if self.group_name is None:
-                return
-            message = f"{data.get("message")}"
-            data = {
-                'type': 'chat.send',
-                'username': self.user.username,
-                'message': message
-            }
+        match data['type']:
+            # 채팅
+            case "chat":
+                if self.group_name is None:
+                    return
+                message = data.get("message")
+                data = {
+                    'type': 'chat.send',
+                    'username': self.user.username,
+                    'message': message
+                }
+                await self.channel_layer.group_send(self.group_name, data)
+            # 게임 초기화
+            # 매칭 후 게임화면 준비를 할 수 있도록 메시지 전송?
+            case "game_init":
+                if self.game_groups[self.group_name].game_manager:
+                    return
+                width = data['width']
+                height = data['height']
+                paddle_speed = data['paddle_speed']
+                paddle_xsize = data['paddle_xsize']
+                paddle_ysize = data['paddle_ysize']
+                game_group = self.game_groups.get(self.group_name, None)
+
+                if self.game_groups[self.group_name].game_manager is None:
+                    game_group.make_game(width, height, paddle_speed, paddle_xsize, paddle_ysize)
+                if self.game_groups[self.group_name].task is None:
+                    game_group.task = asyncio.create_task(self.run_game_loop(game_group.game_manager))
+            case "move_paddle":
+                if self.group_name is None:
+                    return
+                
+                direction = data['direction']
+                game_group = self.game_groups.get(self.group_name, None)
+                game_group.game_manager.move_paddles(direction, self.channel_name)
+
+    async def run_game_loop(self, game_manager):
+        """게임 루프 실행 (60FPS)"""
+        while True:
+            game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
+            
+            # 현재 게임 상태 가져오기
+            game_state = game_manager.get_state()
+            # 그룹 내 모든 클라이언트에게 게임 상태 전송
             await self.channel_layer.group_send(
-                self.group_name, data
+                self.group_name,
+                {
+                    "type": "send.game.state",
+                    "paddles": game_state,
+                }
             )
+            await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
+
+    async def send_game_state(self, event):
+        """게임 상태를 웹소켓으로 클라이언트에 전송"""
+        text_data = json.dumps({
+            'type': 'game_update', 
+            'paddles': event["paddles"]
+        })
+        # text_data = json.dumps(event["paddles"])
+        await self.send(text_data=text_data)
 
     async def matching_on(self, event):
         message = event['message']
         self.group_name = event['group_name']
         text_data = json.dumps({
+            'type': 'chat',
             'username': 'system',
             'message': message,
+        })
+        await self.send(text_data=text_data)
+        text_data = json.dumps({
+            'type': 'matching_on',
+            'message': "매칭 완료! 게임을 시작합니다.",
         })
         await self.send(text_data=text_data)
 
     async def matching_off(self, event):
         message = event['message']
+
         text_data = json.dumps({
+            'type': 'chat',
             'username': 'system',
             'message': message,
+        })
+        await self.send(text_data=text_data)
+        text_data = json.dumps({
+            'type': 'matching_off',
+            'message': "매칭이 종료되었습니다",
         })
         await self.send(text_data=text_data)
 
@@ -124,7 +210,9 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         username = event['username'] 
         message = event['message']
         text_data = json.dumps({
+            'type': 'chat',
             'username': username,
             'message': message,
         })
         await self.send(text_data=text_data)
+        
