@@ -22,5 +22,5 @@ class GameGroup:
         self.user_count = len(self.channels)
         self.group_name = f"{uuid.uuid4().hex}"
     
-    def make_game(self, width, height, paddle_speed, paddle_xsize, paddle_ysize):
-        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, self.channels[0], self.channels[1])
+    def make_game(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
+        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, self.channels[0], self.channels[1])
