@@ -4,6 +4,13 @@ import random
 import logging
 logger = logging.getLogger('chat') 
 
+from enum import Enum, auto
+
+class GameState(Enum):
+    RUNNING = auto()     # 게임 진행 중
+    POINT_SCORED = auto()  # 1점 획득
+    GAME_OVER = auto()   # 게임 종료
+
 """
 js기준으로 왼쪽 위가 0, 0인 기준으로 작성
 아래로 갈땐 y좌표 증가.
@@ -141,6 +148,8 @@ class GameManager:
         self.score = [0, 0]
 
     def run(self):
+        # if self.score[0] >= 5 or self.score[1] >= 5:
+        #     return GameState.GAME_OVER
         for paddle in self.paddles:
             paddle.move()
             CollisionManager.collision_paddle(paddle, self.height)
@@ -148,6 +157,8 @@ class GameManager:
             ball.move()
             CollisionManager.collision_ball(ball, self.paddles, self.height, self.width)
         for ball in self.balls:
+            if -ball.radius - 10 <= ball.x and ball.x <= self.width + ball.radius + 10:
+                continue
             if ball.x < -10:
                 new_balls = [Ball(self.height / 2, self.width / 2, ball.speed, ball.radius) for ball in self.balls]
                 self.balls = new_balls
@@ -156,6 +167,8 @@ class GameManager:
                 new_balls = [Ball(self.height / 2, self.width / 2, ball.speed, ball.radius) for ball in self.balls]
                 self.balls = new_balls
                 self.score[0] += 1
+            return GameState.POINT_SCORED
+        return GameState.RUNNING
     
     def move_paddles(self, direction, channel):
         paddle_idx = self.channels.index(channel)
