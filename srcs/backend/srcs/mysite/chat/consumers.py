@@ -4,7 +4,7 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from chat.matchmanager import MatchManager
-
+from chat.gamemanager import GameState
 import asyncio
 import uuid
 
@@ -155,19 +155,42 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
     async def run_game_loop(self, game_manager):
         """게임 루프 실행 (60FPS)"""
         while True:
-            game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
+            game = game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
             
+            match game:
+                case GameState.RUNNING:
+                    game_state = game_manager.get_state()
+                    # 그룹 내 모든 클라이언트에게 게임 상태 전송
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "send.game.state",
+                            "game_state": game_state,
+                        }
+                    )
+                case GameState.POINT_SCORED:
+                    for i in range(3, 0, -1):
+                        await self.channel_layer.group_send(
+                            self.group_name,
+                            {
+                                "type": "send.wait",
+                                "time": i
+                            }
+                        )
+                        await asyncio.sleep(1)
+                # case GameState.GAME_OVER:
+                #     return
             # 현재 게임 상태 가져오기
-            game_state = game_manager.get_state()
-            # 그룹 내 모든 클라이언트에게 게임 상태 전송
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    "type": "send.game.state",
-                    "game_state": game_state,
-                }
-            )
             await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
+
+    async def send_wait(self, event):
+        """5초 기다리라는 표시"""
+        text_data = json.dumps({
+            'type': 'game_wait',
+            'time': event['time']
+        })
+        # text_data = json.dumps(event["paddles"])
+        await self.send(text_data=text_data)
 
     async def send_game_state(self, event):
         """게임 상태를 웹소켓으로 클라이언트에 전송"""
