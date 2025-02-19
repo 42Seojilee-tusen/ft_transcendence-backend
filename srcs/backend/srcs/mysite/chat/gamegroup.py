@@ -23,4 +23,4 @@ class GameGroup:
         self.group_name = f"{uuid.uuid4().hex}"
     
     def make_game(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
-        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, self.channels[0], self.channels[1])
+        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, self.channels, ball_count=1)
