@@ -94,10 +94,11 @@ class TokenView(APIView):
         file_path = user.profile_image.field.upload_to + '/' + file_name
 
         if not default_storage.exists(file_path):
-            image_response = requests.get(api_data["image"]["link"])
+            image_response = requests.get(api_data['image']['link'])
             if image_response.status_code != 200:
                 return Response(image_response.json(), status=image_response.status_code)
             user.profile_image.save(file_name, ContentFile(image_response.content), save=True)
+            user.save()
 
         refresh_token = RefreshToken.for_user(user)
         refresh_token['is_2fa_authenticated'] = False
