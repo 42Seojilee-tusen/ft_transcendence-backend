@@ -1,4 +1,5 @@
 from chat.gamegroup import GameGroup
+from chat.tournamentgamegroup import TournamentGameGroup
 
 import logging
 logger = logging.getLogger('chat') 
@@ -52,5 +53,8 @@ class MatchManager():
         user3 = waiting_channel3['user']
         channels = [channel1, channel2, channel3, channel4]
         users = [user1, user2, user3, user4]
-        game_group = GameGroup(channels, users)
+        logger.debug("매칭 완료!")
+        logger.debug(channels)
+        logger.debug("매칭 완료!")
+        game_group = TournamentGameGroup(channels, users)
         return game_group
