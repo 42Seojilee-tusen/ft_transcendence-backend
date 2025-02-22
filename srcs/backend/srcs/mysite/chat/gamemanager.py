@@ -146,8 +146,12 @@ class GameManager:
         self.ball_radius = ball_radius
         self.ball_count = ball_count
         
-        self.game_reset()
+        self.out_ball_count = 0
+        
         self.score = [0, 0]
+        self.paddle_offset = [10, 10 + 50 + self.paddle_xsize, 10 + (50 + self.paddle_xsize) * 2]
+        self.game_reset()
+        
         # self.balls = [Ball(self.height / 2, self.width / 2, ball_speed, ball_radius) for _ in range(ball_count)]
         # self.paddles = [
         #     Paddle(                            10, self.height / 2, paddle_speed, paddle_xsize, paddle_ysize), 
@@ -155,14 +159,30 @@ class GameManager:
         # ]
 
     def game_reset(self):
-        # 10, 10 + 50 + paddle.xsize
-        # 
-        self.paddles = [
-            Paddle(                                 10, self.height / 2, self.paddle_speed, self.paddle_xsize, self.paddle_ysize), 
-            Paddle(self.width - self.paddle_xsize - 10, self.height / 2, self.paddle_speed, self.paddle_xsize, self.paddle_ysize),
-        ]
+        self.paddles = []
+        for idx in range(len(self.channels) // 2):
+            offset = self.paddle_offset[idx]
+            paddle_left = Paddle(
+                offset, 
+                self.height / 2, 
+                self.paddle_speed, 
+                self.paddle_xsize, 
+                self.paddle_ysize
+            )
+            paddle_right = Paddle(
+                self.width - self.paddle_xsize - offset, 
+                self.height / 2, 
+                self.paddle_speed, 
+                self.paddle_xsize, 
+                self.paddle_ysize
+            )
+            self.paddles.append(paddle_left)
+            self.paddles.append(paddle_right)
+        # self.paddles = [
+        #     Paddle(                                 10, self.height / 2, self.paddle_speed, self.paddle_xsize, self.paddle_ysize), 
+        #     Paddle(self.width - self.paddle_xsize - 10, self.height / 2, self.paddle_speed, self.paddle_xsize, self.paddle_ysize),
+        # ]
         self.balls = [Ball(self.height / 2, self.width / 2, self.ball_speed, self.ball_radius) for _ in range(self.ball_count)]
-        # self.score = [0, 0]
 
     def run(self):
         if self.score[0] >= 5 or self.score[1] >= 5:
@@ -173,13 +193,16 @@ class GameManager:
         for ball in self.balls:
             ball.move()
             CollisionManager.collision_ball(ball, self.paddles, self.height, self.width)
-        for ball in self.balls:
+            
+        for i, ball in enumerate(self.balls):
             if -ball.radius - 10 <= ball.x and ball.x <= self.width + ball.radius + 10:
                 continue
             if ball.x < -10:
                 self.score[1] += 1
             elif ball.x > self.width + 10:
                 self.score[0] += 1
+            # self.balls[i] = Ball(self.height / 2, self.width / 2, self.ball_speed, self.ball_radius)
+            # self.out_ball_count += 1
             self.game_reset()
             return GameState.POINT_SCORED
         return GameState.RUNNING
