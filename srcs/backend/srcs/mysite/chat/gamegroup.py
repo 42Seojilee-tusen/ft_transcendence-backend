@@ -10,17 +10,128 @@
 5. 게임 만들기를 통해 코루틴과 게임 객체를 생성
 """
 import asyncio
-from chat.gamemanager import GameManager
+from chat.gamemanager import GameManager, GameState
 import uuid
+import logging
+logger = logging.getLogger('chat') 
+from game_records.models import UserOneOnOneGameRecord, OneOnOneMatch
+from users.models import CustomUser
+
 
 class GameGroup:
-    def __init__(self, channel1, channel2, user1, user2):
+    def __init__(self, channels, users):
+        self.channel_layer = None
         self.game_manager = None
         self.task = None
-        self.channels = [channel1, channel2]
-        self.users = [user1, user2]
+        self.channels = channels
+        self.users = users
         self.user_count = len(self.channels)
         self.group_name = f"{uuid.uuid4().hex}"
+
+        ## [5, 3] 형태로 진행된 게임 순서대로 스코어 저장
+        ## 채널도 마찬가지
+        self.games_scores = []
+        self.games_channels = []
+        self.games_users = []
+
+    def make_game_group_co_routine(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
+        if self.task == None:
+            self.task = asyncio.create_task(self.run_game_group(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius))
+
+    # def make_game(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
+    #     self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, self.channels, ball_count=1)
+        # self.task = asyncio.create_task(self.run_game_loop(self.game_manager, self))
     
-    def make_game(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
-        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, self.channels, ball_count=1)
+    def send_message(self, direction, channel_name):
+        self.game_manager.move_paddles(direction, channel_name)
+    
+    async def run_game_group(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
+        task = None
+        channels = []
+        
+        channels = self.channels
+        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
+        task = asyncio.create_task(self.run_game_loop())
+        
+        await task
+        
+        logger.debug(self.games_scores)
+        logger.debug(self.games_users)
+        self.store_game_result()
+    
+    async def run_game_loop(self):
+        """게임 루프 실행 (60FPS)"""
+        while True:
+            game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
+            
+            match game:
+                case GameState.RUNNING:
+                    game_state = self.game_manager.get_state()
+                    # 그룹 내 모든 클라이언트에게 게임 상태 전송
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "send.game.state",
+                            "game_state": game_state,
+                        }
+                    )
+                case GameState.POINT_SCORED:
+                    for i in range(3, 0, -1):
+                        await self.channel_layer.group_send(
+                            self.group_name,
+                            {
+                                "type": "send.wait",
+                                "time": i
+                            }
+                        )
+                        await asyncio.sleep(1)
+                case GameState.GAME_OVER:
+                    game_state = self.game_manager.get_state()
+                    await self.channel_layer.group_send(
+                        self.group_name,
+                        {
+                            "type": "send.game.state",
+                            "game_state": game_state,
+                        }
+                    )
+                    self.games_scores.append(game_state['scores'])
+                    self.games_channels.append(self.game_manager.channels)
+                    games_user = []
+                    for channel in self.game_manager.channels:
+                        idx = self.channels.index(channel)
+                        games_user.append(self.users[idx])
+                        self.games_users.append(games_user)
+                    return
+            # 현재 게임 상태 가져오기
+            await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
+
+    async def store_game_result(self):
+        logger.debug("게임 기록 저장 시작.")
+        player1 = self.games_users[0][0]
+        player2 = self.games_users[0][1]
+        point1 = self.games_scores[0][0]
+        point2 = self.games_scores[0][1]
+        
+        logger.debug(f"player1: {player1}")
+        logger.debug(f"player2: {player2}")
+        logger.debug(f"point1: {point1}")
+        logger.debug(f"point2: {point2}")
+        
+        match = await asyncio.to_thread(
+            OneOnOneMatch.objects.create,
+            player1=player1,
+            player2=player2,
+            point1=point1,
+            point2=point2
+        )
+        await asyncio.to_thread(
+            UserOneOnOneGameRecord.objects.create,
+            user=player1,
+            one_on_one_match_id=match
+        )
+        await asyncio.to_thread(
+            UserOneOnOneGameRecord.objects.create,
+            user=player2,
+            one_on_one_match_id=match
+        )
+        logger.debug("게임 기록 저장!")
