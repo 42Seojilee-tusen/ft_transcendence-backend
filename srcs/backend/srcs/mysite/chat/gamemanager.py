@@ -208,8 +208,11 @@ class GameManager:
         return GameState.RUNNING
     
     def move_paddles(self, direction, channel):
-        paddle_idx = self.channels.index(channel)
-        self.paddles[paddle_idx].direction = direction
+        try:
+            paddle_idx = self.channels.index(channel)
+            self.paddles[paddle_idx].direction = direction
+        except Exception as e:
+            pass
 
     def get_state(self):
         return {
