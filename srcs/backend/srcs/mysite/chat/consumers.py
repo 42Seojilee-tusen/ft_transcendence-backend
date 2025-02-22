@@ -5,12 +5,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from chat.matchmanager import MatchManager
 from chat.gamemanager import GameState
-from game_records.models import UserOneOnOneGameRecord, OneOnOneMatch
-from users.models import CustomUser
+
 import asyncio
-
-
-
 
 import logging
 logger = logging.getLogger('chat') 
@@ -50,10 +46,11 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             await self.accept()
             
             # 매칭이 되면 GameGroup 반환
-            game_group = self.match_manager.matching(self.channel_name, self.user)
+            game_group = self.match_manager.matching2(self.channel_name, self.user)
             
             # 매칭이되면 웹소켓 그룹 생성
             if game_group is not None:
+                game_group.channel_layer = self.channel_layer
                 self.group_name = game_group.group_name
                 self.game_groups[self.group_name] = game_group
                 for channel_name in self.game_groups[self.group_name].channels:
@@ -97,10 +94,11 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 # 셋에서 게임 그룹 삭제
                 game_group = self.game_groups.pop(self.group_name, None)
                 try:
-                    if game_group.task:
-                        game_group.task.cancel()  # 태스크 취소
+                    task = game_group.task
+                    if task:
+                        task.cancel()  # 태스크 취소
                         try:
-                            await game_group.task  # 태스크가 종료될 때까지 대기
+                            await task  # 태스크가 종료될 때까지 대기
                         except asyncio.CancelledError:
                             logger.debug(f"Game loop for {self.group_name} cancelled.")
                     logger.debug(f"GameManager for {self.group_name} deleted.")
@@ -143,89 +141,14 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 ball_speed = data['ball_speed']
                 ball_radius = data['ball_radius']
                 game_group = self.game_groups.get(self.group_name, None)
-                if self.game_groups[self.group_name].game_manager is None:
-                    game_group.make_game(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
-                if self.game_groups[self.group_name].task is None:
-                    game_group.task = asyncio.create_task(self.run_game_loop(game_group.game_manager, game_group))
-                logger.debug(game_group.task)
+                game_group.make_game_group_co_routine(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
             case "move_paddle":
                 if self.group_name is None:
                     return
                 
                 direction = data['direction']
                 game_group = self.game_groups.get(self.group_name, None)
-                game_group.game_manager.move_paddles(direction, self.channel_name)
-
-    async def run_game_loop(self, game_manager, game_group):
-        """게임 루프 실행 (60FPS)"""
-        while True:
-            game = game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
-            
-            match game:
-                case GameState.RUNNING:
-                    game_state = game_manager.get_state()
-                    # 그룹 내 모든 클라이언트에게 게임 상태 전송
-                    await self.channel_layer.group_send(
-                        self.group_name,
-                        {
-                            "type": "send.game.state",
-                            "game_state": game_state,
-                        }
-                    )
-                case GameState.POINT_SCORED:
-                    for i in range(3, 0, -1):
-                        await self.channel_layer.group_send(
-                            self.group_name,
-                            {
-                                "type": "send.wait",
-                                "time": i
-                            }
-                        )
-                        await asyncio.sleep(1)
-                case GameState.GAME_OVER:
-                    game_state = game_manager.get_state()
-                    await self.channel_layer.group_send(
-                        self.group_name,
-                        {
-                            "type": "send.game.state",
-                            "game_state": game_state,
-                        }
-                    )
-                    await self.store_game_result(game_state, game_group)
-                    return
-            # 현재 게임 상태 가져오기
-            await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
-
-    async def store_game_result(self, game_state, game_group):
-        logger.debug("게임 기록 저장 시작.")
-        player1 = game_group.users[0]
-        player2 = game_group.users[1]
-        point1 = game_state['scores'][0]
-        point2 = game_state['scores'][1]
-        
-        logger.debug(f"player1: {player1}")
-        logger.debug(f"player2: {player2}")
-        logger.debug(f"point1: {point1}")
-        logger.debug(f"point2: {point2}")
-        
-        match = await asyncio.to_thread(
-            OneOnOneMatch.objects.create,
-            player1=player1,
-            player2=player2,
-            point1=point1,
-            point2=point2
-        )
-        await asyncio.to_thread(
-            UserOneOnOneGameRecord.objects.create,
-            user=player1,
-            one_on_one_match_id=match
-        )
-        await asyncio.to_thread(
-            UserOneOnOneGameRecord.objects.create,
-            user=player2,
-            one_on_one_match_id=match
-        )
-        logger.debug("게임 기록 저장!")
+                game_group.send_message(direction, self.channel_name)
 
     async def send_wait(self, event):
         """5초 기다리라는 표시"""
