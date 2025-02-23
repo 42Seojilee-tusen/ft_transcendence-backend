@@ -46,6 +46,14 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'error': 'User not found'}, status=400)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path='usernames')
+    def get_every_username(self, request):
+        users = CustomUser.objects.all()
+        usernames = []
+        for user in users:
+            usernames.append(user.username)
+        return Response(usernames)
+
     # override the basic retrieve() to search user by username, not by primary key
     def retrieve(self, request, pk=None):
         try:
