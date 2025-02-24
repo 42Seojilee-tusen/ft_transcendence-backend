@@ -83,10 +83,13 @@ class TokenView(APIView):
         api_data = api_response.json()
 
         user = CustomUser.objects.filter(id=api_data['id']).first() # to prevent DoNotExist
+        _username = api_data['login']
         if not user:
+            if _username == 'me' or _username == 'find' or _username == 'usernames':
+                return Response({'error': f'Invalid username: {_username}'}, status=400)
             user = CustomUser.objects.create(
                 id = api_data['id'],
-                username = self.__generate_unique_username(api_data['login']),
+                username = self.__generate_unique_username(_username),
                 email = api_data['email']
             )
 

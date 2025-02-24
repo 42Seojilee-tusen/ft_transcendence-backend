@@ -24,6 +24,10 @@ class UserAuthView(APIView):
         data = request.data
         if not data:
             return Response({'error': 'The request body is empty.'}, status=400)
+        if 'username' in request.data:
+            username = request.data['username']
+            if username == 'me' or username == 'find' or username == 'usernames':
+                return Response({'error': 'Invalid username'}, status=400)
         serializer = CustomUserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
