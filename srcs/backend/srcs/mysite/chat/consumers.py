@@ -56,7 +56,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
                 for channel_name in self.game_groups[self.group_name].channels:
                     await self.channel_layer.group_add(self.group_name, channel_name)
                 await self.channel_layer.group_send(
-                    self.group_name, {'type':'matching.on', "message": "매칭이 잡혔습니다", "group_name": self.group_name}
+                    self.group_name, {'type':'matching.init', "group_name": self.group_name}
                 )
 
         except Exception as e:
@@ -169,20 +169,28 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         # text_data = json.dumps(event["paddles"])
         await self.send(text_data=text_data)
 
-    async def matching_on(self, event):
-        message = event['message']
+    async def matching_init(self, event):
         self.group_name = event['group_name']
-        text_data = json.dumps({
-            'type': 'chat',
-            'username': 'system',
-            'message': message,
-        })
-        await self.send(text_data=text_data)
+
+        width = 800
+        height = 600
+        paddle_speed = 10
+        paddle_xsize = 20
+        paddle_ysize = 20
+        ball_speed = 10
+        ball_radius = 10
+        game_group = self.game_groups.get(self.group_name, None)
+        game_group.make_game_group_co_routine(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
+
+    async def matching_on(self, event):
+        game_users = event['game_users']
+
         text_data = json.dumps({
             'type': 'matching_on',
-            'message': "매칭 완료! 게임을 시작합니다.",
+            'game_users': game_users,
         })
         await self.send(text_data=text_data)
+
 
     async def matching_off(self, event):
         message = event['message']
@@ -199,6 +207,17 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         })
         await self.send(text_data=text_data)
 
+    async def game_end(self, event):
+        now_players = event['now_players']
+        result = event['result']
+
+        text_data = json.dumps({
+            'type': 'ending',
+            'now_players': now_players,
+            'reslt': result,
+        })
+        await self.send(text_data=text_data)
+
     async def chat_send(self, event):
         username = event['username'] 
         message = event['message']
@@ -208,7 +227,9 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             'message': message,
         })
         await self.send(text_data=text_data)
-        
+
+
+
 
 class GameTournamentConsumer(AsyncWebsocketConsumer):
     # 접속한 클라이언트 수
