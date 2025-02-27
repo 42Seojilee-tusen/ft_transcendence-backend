@@ -74,11 +74,11 @@ class GameGroup:
                 'game_users': game_users
             }
         )
+        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
 
         # await self.send(text_data=text_data)
 
-        self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         task = asyncio.create_task(self.run_game_loop())
         
         await task

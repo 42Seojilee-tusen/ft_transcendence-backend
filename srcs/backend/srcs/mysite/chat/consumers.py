@@ -176,7 +176,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         self.group_name = event['group_name']
 
         width = 800
-        height = 600
+        height = 500
         paddle_speed = 10
         paddle_xsize = 10
         paddle_ysize = 100
