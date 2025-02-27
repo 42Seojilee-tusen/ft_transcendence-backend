@@ -217,7 +217,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         text_data = json.dumps({
             'type': 'ending',
             'now_players': now_players,
-            'reslt': result,
+            'result': result,
         })
         await self.send(text_data=text_data)
 

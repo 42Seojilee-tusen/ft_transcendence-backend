@@ -141,16 +141,6 @@ class GameGroup:
         channels = self.game_manager.channels
         await self.send_game_state(channels)
         await self.send_wait_state(3)
-        # for i in range(3, 0, -1):
-        #     await self.channel_layer.group_send(
-        #         self.group_name,
-        #         {
-        #             "type": "send.wait",
-        #             "time": i,
-        #             "scores": self.game_manager.get_scores()
-        #         }
-        #     )
-        #     await asyncio.sleep(1)
         while self.online_channels[channels[0]] and self.online_channels[channels[1]]:
             game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
 
@@ -159,16 +149,6 @@ class GameGroup:
                     await self.send_game_state(channels)
                 case GameState.POINT_SCORED:
                     await self.send_wait_state(3)
-                    # for i in range(3, 0, -1):
-                    #     await self.channel_layer.group_send(
-                    #         self.group_name,
-                    #         {
-                    #             "type": "send.wait",
-                    #             "time": i,
-                    #             "scores": self.game_manager.get_scores()
-                    #         }
-                    #     )
-                    #     await asyncio.sleep(1)
                 case GameState.GAME_OVER:
                     break
             # 현재 게임 상태 가져오기

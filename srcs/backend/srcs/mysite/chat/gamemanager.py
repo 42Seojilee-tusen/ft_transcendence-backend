@@ -231,6 +231,4 @@ class GameManager:
         }
     
     def get_scores(self):
-        return {
-			'scores': self.score
-		}
+        self.score
