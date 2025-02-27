@@ -127,6 +127,16 @@ class GameGroup:
     async def run_game_loop(self):
         """게임 루프 실행 (60FPS)"""
         channels = self.game_manager.channels
+        await self.send_game_state(channels)
+        for i in range(3, 0, -1):
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "send.wait",
+                    "time": i
+                }
+            )
+            await asyncio.sleep(1)
         while self.online_channels[channels[0]] and self.online_channels[channels[1]]:
             game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
 
