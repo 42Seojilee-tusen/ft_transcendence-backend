@@ -164,19 +164,21 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         """게임 상태를 웹소켓으로 클라이언트에 전송"""
         text_data = json.dumps({
             'type': 'game_update', 
+            'now_players': event['now_players'],
             'game_state': event["game_state"]
         })
         # text_data = json.dumps(event["paddles"])
         await self.send(text_data=text_data)
 
     async def matching_init(self, event):
+        logger.debug("matching_init")
         self.group_name = event['group_name']
 
         width = 800
         height = 600
         paddle_speed = 10
-        paddle_xsize = 20
-        paddle_ysize = 20
+        paddle_xsize = 10
+        paddle_ysize = 100
         ball_speed = 10
         ball_radius = 10
         game_group = self.game_groups.get(self.group_name, None)
