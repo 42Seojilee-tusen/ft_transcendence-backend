@@ -155,7 +155,8 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         """5초 기다리라는 표시"""
         text_data = json.dumps({
             'type': 'game_wait',
-            'time': event['time']
+            'time': event['time'],
+            'scores': event['scores'],
         })
         # text_data = json.dumps(event["paddles"])
         await self.send(text_data=text_data)
