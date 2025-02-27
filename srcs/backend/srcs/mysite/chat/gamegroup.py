@@ -50,7 +50,7 @@ class GameGroup:
             user = self.users[channal]
             res.append({
                 'player_name': user.username,
-                'player_image': user.profile_image
+                'player_image': user.profile_image.url
             })
         return res
 
@@ -64,6 +64,7 @@ class GameGroup:
     async def run_game_group(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
         task = None
         channels = self.channels
+        
 
         game_users = self.get_user_datas(channels)
         await self.channel_layer.group_send(
@@ -81,7 +82,6 @@ class GameGroup:
         task = asyncio.create_task(self.run_game_loop())
         
         await task
-        
         
         game_users = self.get_user_datas(channels)
         await self.channel_layer.group_send(
