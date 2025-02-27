@@ -92,7 +92,6 @@ class GameGroup:
                 'result': self.games_scores[0]
             }
         )
-        await asyncio.sleep(3)
         
         logger.debug(self.games_scores)
         logger.debug(self.games_users)
@@ -153,7 +152,6 @@ class GameGroup:
                     break
             # 현재 게임 상태 가져오기
             await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
-        await self.send_game_state(channels)
         logger.debug("게임 끝")
         logger.debug(self.online_channels)
         logger.debug("게임 끝")
