@@ -8,6 +8,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'username', 'email', 'profile_image']  # 필요한 필드만 선택
 
+    def validate(self, data):
+        instance = self.instance
+        for field, value in data.items():
+            if getattr(instance, field) == value:
+                raise serializers.ValidationError(f'The following field has not been changed: {field}')
+        return super().validate(data)
+
 class CustomUserPatternSerializer(serializers.ModelSerializer):
     user_list = serializers.SerializerMethodField()
 
