@@ -204,6 +204,8 @@ class GameManager:
             # self.balls[i] = Ball(self.height / 2, self.width / 2, self.ball_speed, self.ball_radius)
             # self.out_ball_count += 1
             self.game_reset()
+            if self.score[0] >= 5 or self.score[1] >= 5:
+                return GameState.GAME_OVER
             return GameState.POINT_SCORED
         return GameState.RUNNING
     
