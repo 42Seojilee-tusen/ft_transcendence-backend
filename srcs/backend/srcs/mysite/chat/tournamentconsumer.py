@@ -210,7 +210,7 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
 
         text_data = json.dumps({
             'type': 'ending',
-            'winner': winner[0].player_name,
+            'winner': winner[0],
         })
         await self.send(text_data=text_data)
 
@@ -220,7 +220,6 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
         text_data = json.dumps({
             'type': 'next_game',
             'now_players': now_players,
-            # 'now_player': now_players,
         })
         await self.send(text_data=text_data)
         
