@@ -90,13 +90,14 @@ class TournamentGameGroup:
         )
         
         # 게임하는 유저들 알림
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'next.game',
-                'now_players': now_game_users,
-            }
-        )
+        await self.send_next_user(now_game_users)
+        # await self.channel_layer.group_send(
+        #     self.group_name,
+        #     {
+        #         'type': 'next.game',
+        #         'now_players': now_game_users,
+        #     }
+        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -124,13 +125,14 @@ class TournamentGameGroup:
         
         
         now_game_users = self.get_user_datas(channels)
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'next.game',
-                'now_players': now_game_users,
-            }
-        )
+        await self.send_next_user(now_game_users)
+        # await self.channel_layer.group_send(
+        #     self.group_name,
+        #     {
+        #         'type': 'next.game',
+        #         'now_players': now_game_users,
+        #     }
+        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -154,13 +156,14 @@ class TournamentGameGroup:
 
         channels = winner_channels
         now_game_users = self.get_user_datas(channels)
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'next.game',
-                'now_players': now_game_users,
-            }
-        )
+        await self.send_next_user(now_game_users)
+        # await self.channel_layer.group_send(
+        #     self.group_name,
+        #     {
+        #         'type': 'next.game',
+        #         'now_players': now_game_users,
+        #     }
+        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -179,13 +182,14 @@ class TournamentGameGroup:
         
         channels = defeat_channels
         now_game_users = self.get_user_datas(channels)
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'next.game',
-                'now_players': now_game_users,
-            }
-        )
+        await self.send_next_user(now_game_users)
+        # await self.channel_layer.group_send(
+        #     self.group_name,
+        #     {
+        #         'type': 'next.game',
+        #         'now_players': now_game_users,
+        #     }
+        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -206,7 +210,7 @@ class TournamentGameGroup:
         elif self.games_scores[2][1] == 5:
             winner_channel = [winner_channels[1]]
         
-        winner_user = self.get_user_datas(winner_channels)
+        winner_user = self.get_user_datas(winner_channel)
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -216,13 +220,27 @@ class TournamentGameGroup:
         )
         await self.store_game_result()
 
-    async def send_game_state(self):
+    async def send_next_user(self, users):
+        now_players = [user['player_name'] for user in users]
+        
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'next.game',
+                'now_players': now_players,
+            }
+        )
+
+    async def send_game_state(self, channels):
         game_state = self.game_manager.get_state()
+        
+        game_users = self.get_user_datas(channels)
         # 그룹 내 모든 클라이언트에게 게임 상태 전송
         await self.channel_layer.group_send(
             self.group_name,
             {
                 "type": "send.game.state",
+                "now_players": game_users,
                 "game_state": game_state,
             }
         )
@@ -252,9 +270,12 @@ class TournamentGameGroup:
 
     async def run_game_loop(self):
         """게임 루프 실행 (60FPS)"""
+        logger.debug("test game init before")
         channels = self.game_manager.channels
+        logger.debug(channels)
         await self.send_game_state(channels)
         await self.send_wait_state(3)
+        logger.debug("test game init after")
         while self.online_channels[channels[0]] and self.online_channels[channels[1]]:
             game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
 
