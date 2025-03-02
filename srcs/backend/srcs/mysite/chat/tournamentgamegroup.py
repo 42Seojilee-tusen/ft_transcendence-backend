@@ -91,13 +91,6 @@ class TournamentGameGroup:
         
         # 게임하는 유저들 알림
         await self.send_next_user(now_game_users)
-        # await self.channel_layer.group_send(
-        #     self.group_name,
-        #     {
-        #         'type': 'next.game',
-        #         'now_players': now_game_users,
-        #     }
-        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -111,13 +104,7 @@ class TournamentGameGroup:
             winner_channels.append(channels[1])
             defeat_channels.append(channels[0])
             
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'finish',
-                'result': round_scores
-            }
-        )
+        await self.send_finish(round_scores)
 
         await asyncio.sleep(3)
 
@@ -126,13 +113,6 @@ class TournamentGameGroup:
         
         now_game_users = self.get_user_datas(channels)
         await self.send_next_user(now_game_users)
-        # await self.channel_layer.group_send(
-        #     self.group_name,
-        #     {
-        #         'type': 'next.game',
-        #         'now_players': now_game_users,
-        #     }
-        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
@@ -145,64 +125,32 @@ class TournamentGameGroup:
         elif round_scores[1] == 5:
             winner_channels.append(channels[1])
             defeat_channels.append(channels[0])
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'finish',
-                'result': round_scores
-            }
-        )
+        await self.send_finish(round_scores)
         await asyncio.sleep(3)
 
         channels = winner_channels
         now_game_users = self.get_user_datas(channels)
         await self.send_next_user(now_game_users)
-        # await self.channel_layer.group_send(
-        #     self.group_name,
-        #     {
-        #         'type': 'next.game',
-        #         'now_players': now_game_users,
-        #     }
-        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
 
         round_scores = self.games_scores[2]
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'finish',
-                'result': round_scores
-            }
-        )
+        await self.send_finish(round_scores)
         await asyncio.sleep(3)
         
         
         channels = defeat_channels
         now_game_users = self.get_user_datas(channels)
         await self.send_next_user(now_game_users)
-        # await self.channel_layer.group_send(
-        #     self.group_name,
-        #     {
-        #         'type': 'next.game',
-        #         'now_players': now_game_users,
-        #     }
-        # )
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
         
         round_scores = self.games_scores[3]
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'finish',
-                'result': round_scores
-            }
-        )
+        await self.send_finish(round_scores)
         await asyncio.sleep(3)
         
         if self.games_scores[2][0] == 5:
@@ -221,13 +169,23 @@ class TournamentGameGroup:
         await self.store_game_result()
 
     async def send_next_user(self, users):
-        now_players = [user['player_name'] for user in users]
+        now_players = users
+        # now_players = [user['player_name'] for user in users]
         
         await self.channel_layer.group_send(
             self.group_name,
             {
                 'type': 'next.game',
                 'now_players': now_players,
+            }
+        )
+
+    async def send_finish(self, round_scores):
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'finish',
+                'result': round_scores
             }
         )
 
