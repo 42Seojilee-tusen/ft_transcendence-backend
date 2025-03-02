@@ -206,10 +206,11 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
 
     async def game_end(self, event):
         winner = event['winner']
+        
 
         text_data = json.dumps({
             'type': 'ending',
-            'winner': winner,
+            'winner': winner[0].player_name,
         })
         await self.send(text_data=text_data)
 
