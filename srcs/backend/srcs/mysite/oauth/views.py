@@ -95,9 +95,9 @@ class TokenView(APIView):
             return Return({'error': f'Invalid username: {api_data["login"]}'})
 
         file_name = f'_{user.id}.png'
-        file_path = user.profile_image.field.upload_to(user, file_name)
 
-        if not default_storage.exists(file_path):
+        files, _ = default_storage.listdir('profiles')
+        if not any(f.startswith(f'_{user.id}') for f in files):
             image_response = requests.get(api_data['image']['link'])
             if image_response.status_code != 200:
                 return Response(image_response.json(), status=image_response.status_code)
