@@ -16,7 +16,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         return super().validate(data)
 
     def update(self, instance, validated_data):
-        if instance.profile_image and os.path.isfile(instance.profile_image.path):
+        if 'profile_image' in validated_data and instance.profile_image and os.path.isfile(instance.profile_image.path):
                 os.remove(instance.profile_image.path)
         return super().update(instance, validated_data)
 
