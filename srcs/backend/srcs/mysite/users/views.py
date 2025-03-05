@@ -32,8 +32,6 @@ class UserAuthView(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    authentication_classes = []
-    permission_classes = []
     queryset = CustomUser.objects.all()
     serializer_class = CustomUserSerializer
 
