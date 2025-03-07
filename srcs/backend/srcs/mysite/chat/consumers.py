@@ -38,7 +38,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             self.active_channels[self.user.id] = self.active_channels.get(self.user.id, 0) + 1
             
             # # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
-            # if self.channel_name in self.active_channels and self.active_channels[self.channel_name] > 1:
+            # if self.user.id in self.active_channels and self.active_channels[self.user.id] > 1:
             #     logger.error(f"{self.user.username} is multi client error")
             #     raise Exception('multi client error')
             
@@ -67,7 +67,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # JWT토큰 인증 오류 유저
         if self.user is None or isinstance(self.user, AnonymousUser):
-            logger.error(f"{self.user.username}은 JWT인증이 안된 유저입니다.")
+            logger.error("JWT인증이 안된 유저입니다.")
             return
 
         # 유저수를 1 감소
@@ -75,6 +75,8 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         self.active_channels[self.user.id] -= 1
         if self.active_channels[self.user.id] <= 0:
             self.active_channels.pop(self.user.id, None)
+        else:
+            return
 
         # 대기중인 유저 목록에서 자기자신 제거
         self.match_manager.del_waiting(self.channel_name)
@@ -108,7 +110,7 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             # 자신의 그룹 이름을 None으로 설정
             self.group_name = None
         except Exception as e:
-            logger.debug("group discard error: " + str(e))
+            logger.debug("group discard error: " + str(e) + f" group_name: {self.group_name}")
 
     # Receive message from WebSocket
     async def receive(self, text_data):

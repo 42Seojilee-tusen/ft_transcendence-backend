@@ -4,7 +4,9 @@ from chat.tournamentgamegroup import TournamentGameGroup
 import logging
 logger = logging.getLogger('chat') 
 class MatchManager():
-    waiting_channels = []
+
+    def __init__(self):
+        self.waiting_channels = []
 
     # 대기열 추가
     def add_waiting(self, channel_name, user):
@@ -26,6 +28,10 @@ class MatchManager():
     # 있으면 GameGroup객체 반환
     def matching2(self, channel2, user2):
         # 매칭 로직
+        logger.debug("===========")
+        logger.debug(channel2)
+        logger.debug(self.waiting_channels)
+        logger.debug("===========")
         if len(self.waiting_channels) < 1:
             self.add_waiting(channel2, user2)
             return None
@@ -39,6 +45,10 @@ class MatchManager():
 
     def matching4(self, channel4, user4):
         # 매칭 로직
+        logger.debug("===========")
+        logger.debug(channel4)
+        logger.debug(self.waiting_channels)
+        logger.debug("===========")
         if len(self.waiting_channels) < 3:
             self.add_waiting(channel4, user4)
             return None

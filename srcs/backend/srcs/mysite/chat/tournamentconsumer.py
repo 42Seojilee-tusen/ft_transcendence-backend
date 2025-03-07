@@ -38,7 +38,7 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
             self.active_channels[self.user.id] = self.active_channels.get(self.user.id, 0) + 1
             
             # # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
-            # if self.channel_name in self.active_channels and self.active_channels[self.channel_name] > 1:
+            # if self.user.id in self.active_channels and self.active_channels[self.user.id] > 1:
             #     logger.error(f"{self.user.username} is multi client error")
             #     raise Exception('multi client error')
             
@@ -67,7 +67,7 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # JWT토큰 인증 오류 유저
         if self.user is None or isinstance(self.user, AnonymousUser):
-            logger.error(f"{self.user.username}은 JWT인증이 안된 유저입니다.")
+            logger.error("JWT인증이 안된 유저입니다.")
             return
 
         # 유저수를 1 감소
