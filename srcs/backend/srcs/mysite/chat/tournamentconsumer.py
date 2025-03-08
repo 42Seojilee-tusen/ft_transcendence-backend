@@ -75,8 +75,8 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
         self.active_channels[self.user.id] -= 1
         if self.active_channels[self.user.id] <= 0:
             self.active_channels.pop(self.user.id, None)
-        else:
-            return
+        # else:
+        #     return
 
         # 대기중인 유저 목록에서 자기자신 제거
         self.match_manager.del_waiting(self.channel_name)
@@ -85,9 +85,6 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
         # if self.group_name:
         try:
             # 매칭되어있던 유저들에게 접속을 종료했음을 알림
-            await self.channel_layer.group_send(
-                self.group_name, {'type':'matching.off', "message": f"{self.user.username}의 매칭이 끊겼습니다"}
-            )
             # 그룹에서 자기자신 삭제 후, 그룹 인원 수를 줄임.
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
             await self.game_groups[self.group_name].disconnect_channel(self.channel_name)
@@ -193,16 +190,6 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
             'game_users': game_users,
             'now_players': now_players,
             # 'now_player': now_players,
-        })
-        await self.send(text_data=text_data)
-
-    async def matching_off(self, event):
-        message = event['message']
-
-        await self.send(text_data=text_data)
-        text_data = json.dumps({
-            'type': 'matching_off',
-            'message': "매칭이 종료되었습니다",
         })
         await self.send(text_data=text_data)
 
