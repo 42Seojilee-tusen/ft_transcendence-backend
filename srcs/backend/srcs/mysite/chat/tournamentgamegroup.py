@@ -251,7 +251,7 @@ class TournamentGameGroup:
         logger.debug("게임 끝")
         if self.online_channels[channels[0]] == False:
             await self.append_game_result([-1,5])
-        elif self.online_channels[channels[0]] == False:
+        elif self.online_channels[channels[1]] == False:
             await self.append_game_result([5,-1])
         else:
             await self.append_game_result()
