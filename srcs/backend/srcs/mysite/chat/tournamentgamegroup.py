@@ -43,6 +43,17 @@ class TournamentGameGroup:
         self.user_count -= 1
         self.online_channels[channel] = False
 
+    def get_user_datas(self, channels):
+        res = []
+
+        for channal in channels:
+            user = self.users[channal]
+            res.append({
+                'player_name': user.username,
+                'player_image': user.profile_image.url
+            })
+        return res
+
     def make_game_group_co_routine(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
         if self.task == None:
             self.task = asyncio.create_task(self.run_game_group(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius))
@@ -51,14 +62,37 @@ class TournamentGameGroup:
         self.game_manager.move_paddles(direction, channel_name)
     
     async def run_game_group(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
+        # 진행중인 게임 태스크
         task = None
+        # 진행중인 채널들 -> 2명
         channels = []
 
+        # 이긴 채널들 -> 3라운드 대상자
         winner_channels = []
+        # 진 채널들 -> 4라운드 대상자
         defeat_channels = []
 
+        # 게임 시작
+
+        # 게임할 두명 선택
         channels = self.channels[:2]
+        all_game_users = self.get_user_datas(self.channels)
+        now_game_users = self.get_user_datas(channels)
+        
+        # 매챙된 4명의 유저 알림
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'matching.on',
+                'game_users': all_game_users,
+                'now_players': now_game_users,
+            }
+        )
+        
+        # 게임하는 유저들 알림
+        await self.send_next_user(now_game_users)
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
+        await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
 
@@ -69,9 +103,18 @@ class TournamentGameGroup:
         elif round_scores[1] == 5:
             winner_channels.append(channels[1])
             defeat_channels.append(channels[0])
+            
+        await self.send_finish(round_scores)
+
+        await asyncio.sleep(3)
 
         channels = self.channels[2:]
+        
+        
+        now_game_users = self.get_user_datas(channels)
+        await self.send_next_user(now_game_users)
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
+        await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
         
@@ -82,28 +125,80 @@ class TournamentGameGroup:
         elif round_scores[1] == 5:
             winner_channels.append(channels[1])
             defeat_channels.append(channels[0])
+        await self.send_finish(round_scores)
+        await asyncio.sleep(3)
 
         channels = winner_channels
+        now_game_users = self.get_user_datas(channels)
+        await self.send_next_user(now_game_users)
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
+        await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
 
+        round_scores = self.games_scores[2]
+        await self.send_finish(round_scores)
+        await asyncio.sleep(3)
+        
+        
         channels = defeat_channels
+        now_game_users = self.get_user_datas(channels)
+        await self.send_next_user(now_game_users)
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
+        await asyncio.sleep(3)
         task = asyncio.create_task(self.run_game_loop())
         await task
         
-        logger.debug(self.games_scores)
-        logger.debug(self.games_users)
+        round_scores = self.games_scores[3]
+        await self.send_finish(round_scores)
+        await asyncio.sleep(3)
+        
+        if self.games_scores[2][0] == 5:
+            winner_channel = [winner_channels[0]]
+        elif self.games_scores[2][1] == 5:
+            winner_channel = [winner_channels[1]]
+        
+        winner_user = self.get_user_datas(winner_channel)
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'game.end',
+                'winner': winner_user
+            }
+        )
         await self.store_game_result()
 
-    async def send_game_state(self):
+    async def send_next_user(self, users):
+        now_players = users
+        # now_players = [user['player_name'] for user in users]
+        
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'next.game',
+                'now_players': now_players,
+            }
+        )
+
+    async def send_finish(self, round_scores):
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'finish',
+                'result': round_scores
+            }
+        )
+
+    async def send_game_state(self, channels):
         game_state = self.game_manager.get_state()
+        
+        game_users = self.get_user_datas(channels)
         # 그룹 내 모든 클라이언트에게 게임 상태 전송
         await self.channel_layer.group_send(
             self.group_name,
             {
                 "type": "send.game.state",
+                "now_players": game_users,
                 "game_state": game_state,
             }
         )
@@ -119,35 +214,44 @@ class TournamentGameGroup:
             games_user.append(self.users[channel])
             self.games_users.append(games_user)
 
+    async def send_wait_state(self, time):
+        for i in range(time, 0, -1):
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "send.wait",
+                    "time": i,
+                    "scores": self.game_manager.get_scores()
+                }
+            )
+            await asyncio.sleep(1)
+
     async def run_game_loop(self):
         """게임 루프 실행 (60FPS)"""
-        while self.online_channels[self.game_manager.channels[0]] and self.online_channels[self.game_manager.channels[1]]:
+        logger.debug("test game init before")
+        channels = self.game_manager.channels
+        logger.debug(channels)
+        await self.send_game_state(channels)
+        await self.send_wait_state(3)
+        logger.debug("test game init after")
+        while self.online_channels[channels[0]] and self.online_channels[channels[1]]:
             game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
 
             match game:
                 case GameState.RUNNING:
-                    await self.send_game_state()
+                    await self.send_game_state(channels)
                 case GameState.POINT_SCORED:
-                    for i in range(3, 0, -1):
-                        await self.channel_layer.group_send(
-                            self.group_name,
-                            {
-                                "type": "send.wait",
-                                "time": i
-                            }
-                        )
-                        await asyncio.sleep(1)
+                    await self.send_wait_state(3)
                 case GameState.GAME_OVER:
                     break
             # 현재 게임 상태 가져오기
             await asyncio.sleep(1 / 60)  # 60FPS (0.016초 대기)
-        await self.send_game_state()
         logger.debug("게임 끝")
         logger.debug(self.online_channels)
         logger.debug("게임 끝")
-        if self.online_channels[self.game_manager.channels[0]] == False:
+        if self.online_channels[channels[0]] == False:
             await self.append_game_result([-1,5])
-        elif self.online_channels[self.game_manager.channels[0]] == False:
+        elif self.online_channels[channels[0]] == False:
             await self.append_game_result([5,-1])
         else:
             await self.append_game_result()

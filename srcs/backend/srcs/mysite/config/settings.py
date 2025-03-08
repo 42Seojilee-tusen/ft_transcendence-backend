@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'game_records',
     'follows',
     'daphne',
+    'online_status',
 ]
 
 INSTALLED_APPS += [

@@ -17,9 +17,6 @@ class MatchAuthViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 class MatchViewSet(viewsets.ViewSet):
-    authentication_classes = []
-    permission_classes = []
-
     #/api/games/[username]/
     def retrieve(self, request, pk=None):
         try:

@@ -1,12 +1,24 @@
 # serializers.py
 from rest_framework import serializers
 from .models import CustomUser
-import re
+import re, os
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'profile_image']  # 필요한 필드만 선택
+
+    def validate(self, data):
+        instance = self.instance
+        for field, value in data.items():
+            if getattr(instance, field) == value:
+                raise serializers.ValidationError(f'The following field has not been changed: {field}')
+        return super().validate(data)
+
+    def update(self, instance, validated_data):
+        if 'profile_image' in validated_data and instance.profile_image and os.path.isfile(instance.profile_image.path):
+                os.remove(instance.profile_image.path)
+        return super().update(instance, validated_data)
 
 class CustomUserPatternSerializer(serializers.ModelSerializer):
     user_list = serializers.SerializerMethodField()
