@@ -1,22 +1,24 @@
 services:
-  # 테스트할 땐 주석 해제
-  # frontend:
-  #   init: true
-  #   build: ./srcs/frontend
-  #   image: frontend:42
-  #   container_name: frontend
-  #   environment:
-  #     DOMAIN_NAME: ${DOMAIN_NAME}
-  #     SSL_KEY: ${SSL_KEY}
-  #     SSL_CRT: ${SSL_CRT}
+# 테스트할 땐 주석 해제
+#  frontend:
+#    init: true
+#    build: ./srcs/frontend
+#    image: frontend:42
+#    container_name: frontend
+#    environment:
+#      DOMAIN_NAME: ${DOMAIN_NAME}
+#      SSL_KEY: ${SSL_KEY}
+#      SSL_CRT: ${SSL_CRT}
+#    ports:
+#      - "443:443"
+#      - "80:80"
+#    networks:
+#      - ft_trancendence
+#    volumes:
+#      - ./srcs/frontend/codes:/usr/share/nginx/html
+#    depends_on:
+#      - backend
 
-  #   ports:
-  #     - "443:443"
-  #     - "80:80"
-  #   networks:
-  #     - ft_trancendence
-  #   volumes:
-  #     - ./srcs/frontend/codes:/usr/share/nginx/html
   backend:
     init: true
     build: ./srcs/backend
@@ -43,7 +45,9 @@ services:
     volumes:
       - ./srcs/backend/srcs:/projects
     depends_on:
-      - database
+      database:
+        condition: service_healthy
+        restart: true
 
   database:
     init: true
@@ -60,15 +64,20 @@ services:
       - ft_trancendence
     volumes:
       - ./srcs/database/srcs:/var/lib/postgresql/data
-  # 테스트할 땐 주석 해제
-  # redis:
-  #   init: true
-  #   image: redis:7
-  #   networks:
-  #     - ft_trancendence
-  #   ports:
-  #     - 6379:6379
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB" ]
+      start_period: 2s
+      interval: 5s
+      timeout: 10s
+      retries: 3
+# 테스트할 땐 주석 해제
+#  redis:
+#    init: true
+#    image: redis:7
+#    networks:
+#      - ft_trancendence
+#    ports:
+#      - 6379:6379
 
 networks:
   ft_trancendence:
-
