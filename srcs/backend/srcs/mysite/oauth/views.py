@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from django.utils.decorators import method_decorator
 from .models import TwoFactor
 from .serializers import TwoFactorSerializer
-from users.models import CustomUser
+from users.models import CustomUser, FORBIDDEN_PATTERNS
 from users.serializers import CustomUserSerializer
 import json
 import pyotp
@@ -25,7 +25,6 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from rest_framework.permissions import AllowAny
 from django.core.files.storage import default_storage
-from django.core.exceptions import ValidationError
 
 import logging
 logger = logging.getLogger('oauth') 
@@ -52,7 +51,7 @@ class TokenView(APIView):
         # Check if the username exists and append a number if it does
         username = base_username
         counter = 1
-        while CustomUser.objects.filter(username=username).exists():
+        while username in FORBIDDEN_PATTERNS or CustomUser.objects.filter(username=username).exists():
             username = f"{base_username}{counter}"  # Append the counter to the username
             counter += 1
         return username
@@ -84,20 +83,13 @@ class TokenView(APIView):
         api_data = api_response.json()
 
         user = CustomUser.objects.filter(id=api_data['id']).first() # to prevent DoNotExist
-        try:
-            if not user:
-                user = CustomUser.objects.create(
+        if not user:
+            user = CustomUser.objects.create(
                     id = api_data['id'],
                     username = self.__generate_unique_username(api_data['login']),
                     email = api_data['email']
-                )
-        except ValidationError:
-            return Return({'error': f'Invalid username: {api_data["login"]}'})
-
-        file_name = f'_{user.id}.png'
-
-        files, _ = default_storage.listdir('profiles')
-        if not any(f.startswith(f'_{user.id}') for f in files):
+                    )
+            file_name = f'_{user.id}.png'
             image_response = requests.get(api_data['image']['link'])
             if image_response.status_code != 200:
                 return Response(image_response.json(), status=image_response.status_code)
