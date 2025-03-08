@@ -9,6 +9,8 @@ logger = logging.getLogger('chat')
 
 class OnlineUserConsumer(AsyncWebsocketConsumer):
     
+    active_channels = {}
+    
     async def connect(self):
         self.user = self.scope["user"]
         self.group_name = "online_user_group"
@@ -53,7 +55,4 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
         
         user.is_online = state
         
-        await asyncio.to_thread(
-            CustomUser.objects.update,
-            user=user
-        )
+        await asyncio.to_thread(user.save)
