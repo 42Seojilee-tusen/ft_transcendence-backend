@@ -77,12 +77,10 @@ class GameGroup:
         self.game_manager = GameManager(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius, channels, ball_count=1)
         await asyncio.sleep(3)
 
-        # await self.send(text_data=text_data)
-
         task = asyncio.create_task(self.run_game_loop())
-        
+
         await task
-        
+
         game_users = self.get_user_datas(channels)
         await self.channel_layer.group_send(
             self.group_name,
@@ -142,7 +140,6 @@ class GameGroup:
         await self.send_wait_state(3)
         while self.online_channels[channels[0]] and self.online_channels[channels[1]]:
             game = self.game_manager.run()  # 게임 상태 업데이트 (공, 패들 이동 등)
-
             match game:
                 case GameState.RUNNING:
                     await self.send_game_state(channels)
