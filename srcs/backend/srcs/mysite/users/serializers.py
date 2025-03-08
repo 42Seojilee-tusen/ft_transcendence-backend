@@ -7,6 +7,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ['id', 'username', 'email', 'profile_image', 'is_online']  # 필요한 필드만 선택
+        read_only_fields = ['is_online']
 
     def validate(self, data):
         instance = self.instance
