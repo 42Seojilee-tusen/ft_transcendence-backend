@@ -6,7 +6,7 @@ import re, os
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'profile_image']  # 필요한 필드만 선택
+        fields = ['id', 'username', 'email', 'profile_image', 'is_online']  # 필요한 필드만 선택
 
     def validate(self, data):
         instance = self.instance

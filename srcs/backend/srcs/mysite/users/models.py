@@ -21,3 +21,4 @@ class CustomUser(AbstractUser):
         unique=True,
         validators=[validate_username]
     )
+    is_online = models.BooleanField(default=False)
