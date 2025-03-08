@@ -27,8 +27,6 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
             # 웹소켓 접속을 수락
             await self.accept()
 
-            self.user.is_online = True
-            
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.channel_layer.group_send(
                 self.group_name, {
@@ -44,7 +42,6 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
         if self.user is None or isinstance(self.user, AnonymousUser):
             logger.error(f"JWT인증이 안된 유저입니다.")
             return
-        self.user.is_online = False
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
         await self.channel_layer.group_send(
             self.group_name, {
