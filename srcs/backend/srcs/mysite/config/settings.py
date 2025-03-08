@@ -27,7 +27,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+	os.getenv('DOMAIN_NAME'),
+]
 
 # Application definition
 
@@ -225,7 +227,7 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-CSRF_TRUSTED_ORIGINS = ['https://localhost','https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://localhost','https://*.127.0.0.1', 'https://10.16.220.226']
 
 # asgi 설정
 ASGI_APPLICATION = "config.asgi.application"
