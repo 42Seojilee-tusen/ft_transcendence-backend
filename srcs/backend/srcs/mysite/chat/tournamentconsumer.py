@@ -75,6 +75,8 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
         self.active_channels[self.user.id] -= 1
         if self.active_channels[self.user.id] <= 0:
             self.active_channels.pop(self.user.id, None)
+        else:
+            return
 
         # 대기중인 유저 목록에서 자기자신 제거
         self.match_manager.del_waiting(self.channel_name)
