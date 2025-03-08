@@ -1,8 +1,10 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
+from users.models import CustomUser
 
 import json
 import logging
+import asyncio
 logger = logging.getLogger('chat') 
 
 class OnlineUserConsumer(AsyncWebsocketConsumer):
@@ -25,36 +27,33 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
             
             # 웹소켓 접속을 수락
             await self.accept()
+            await self.save_is_online_state(True)
             
-            await self.channel_layer.group_add(self.group_name, self.channel_name)
-            await self.channel_layer.group_send(
-                self.group_name, {
-                    'type':'broadcast_online_users',
-                    'username': self.user.username
-                }
-            )
         except Exception as e:
             logger.error(str(e))
             await self.close(code=4001)
             return
     async def disconnect(self, close_code):
         if self.user is None or isinstance(self.user, AnonymousUser):
-            logger.error(f"{self.user.username}은 JWT인증이 안된 유저입니다.")
+            logger.error("JWT인증이 안된 유저입니다.")
             return
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        await self.channel_layer.group_send(
-            self.group_name, {
-                'type':'broadcast_online_users',
-                'username': self.user.username
-            }
-        )
+        # 유저수를 1 감소
+        # 만약 내가 마지막 유저였다면 해당 세트를 삭제
+        self.active_channels[self.user.id] -= 1
+        if self.active_channels[self.user.id] <= 0:
+            self.active_channels.pop(self.user.id, None)
+            await self.save_is_online_state(False)
+
     async def receive(self, text_data):
         pass
     
-    async def broadcast_online_users(self, event):
-        username = event['username']
-        text_data = json.dumps({
-            'type': 'broadcast',
-            'username': username
-        })
-        await self.send(text_data=text_data)
+    async def save_is_online_state(self, state: bool):
+        
+        user: CustomUser = self.user
+        
+        user.is_online = state
+        
+        await asyncio.to_thread(
+            CustomUser.objects.update,
+            user=user
+        )
