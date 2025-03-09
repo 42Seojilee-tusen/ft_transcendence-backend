@@ -212,7 +212,7 @@ class TournamentGameGroup:
         games_user = []
         for channel in self.game_manager.channels:
             games_user.append(self.users[channel])
-            self.games_users.append(games_user)
+        self.games_users.append(games_user)
 
     async def send_wait_state(self, time):
         for i in range(time, 0, -1):
