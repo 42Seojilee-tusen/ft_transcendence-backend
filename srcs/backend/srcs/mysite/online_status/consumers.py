@@ -29,6 +29,7 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
             
             # 웹소켓 접속을 수락
             await self.accept()
+            self.id = self.user.id
             await self.save_is_online_state(True)
             
         except Exception as e:
@@ -51,7 +52,9 @@ class OnlineUserConsumer(AsyncWebsocketConsumer):
     
     async def save_is_online_state(self, state: bool):
         
-        user: CustomUser = self.user
+        user: CustomUser = await asyncio.to_thread(
+            lambda: CustomUser.objects.get(id=self.id)
+        )
         
         user.is_online = state
         
