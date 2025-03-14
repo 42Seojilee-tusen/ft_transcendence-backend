@@ -34,11 +34,12 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
             if self.user is None or isinstance(self.user, AnonymousUser):
                 logger.error("User not authenticated")
                 raise Exception('User not authenticated')
+            self.id = self.user.id
             # 유저의 수를 증가
-            self.active_channels[self.user.id] = self.active_channels.get(self.user.id, 0) + 1
+            self.active_channels[self.id] = self.active_channels.get(self.id, 0) + 1
             
             # # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
-            # if self.user.id in self.active_channels and self.active_channels[self.user.id] > 1:
+            # if self.id in self.active_channels and self.active_channels[self.id] > 1:
             #     logger.error(f"{self.user.username} is multi client error")
             #     raise Exception('multi client error')
             
@@ -46,7 +47,7 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
             await self.accept()
             
             # 매칭이 되면 GameGroup 반환
-            game_group = self.match_manager.matching4(self.channel_name, self.user)
+            game_group = self.match_manager.matching4(self.channel_name, self.id)
             
             # 매칭이되면 웹소켓 그룹 생성
             if game_group is not None:
@@ -72,9 +73,9 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
 
         # 유저수를 1 감소
         # 만약 내가 마지막 유저였다면 해당 세트를 삭제
-        self.active_channels[self.user.id] -= 1
-        if self.active_channels[self.user.id] <= 0:
-            self.active_channels.pop(self.user.id, None)
+        self.active_channels[self.id] -= 1
+        if self.active_channels[self.id] <= 0:
+            self.active_channels.pop(self.id, None)
         # else:
         #     return
 
@@ -116,31 +117,20 @@ class GameTournamentConsumer(AsyncWebsocketConsumer):
             logger.debug("type is not define")
             return
         match data['type']:
-            # 채팅
-            case "chat":
-                if self.group_name is None:
-                    return
-                message = data.get("message")
-                data = {
-                    'type': 'chat.send',
-                    'username': self.user.username,
-                    'message': message
-                }
-                await self.channel_layer.group_send(self.group_name, data)
             # 게임 초기화
             # 매칭 후 게임화면 준비를 할 수 있도록 메시지 전송?
-            case "game_init":
-                if self.game_groups[self.group_name].game_manager:
-                    return
-                width = data['width']
-                height = data['height']
-                paddle_speed = data['paddle_speed']
-                paddle_xsize = data['paddle_xsize']
-                paddle_ysize = data['paddle_ysize']
-                ball_speed = data['ball_speed']
-                ball_radius = data['ball_radius']
-                game_group = self.game_groups.get(self.group_name, None)
-                game_group.make_game_group_co_routine(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
+            # case "game_init":
+            #     if self.game_groups[self.group_name].game_manager:
+            #         return
+            #     width = data['width']
+            #     height = data['height']
+            #     paddle_speed = data['paddle_speed']
+            #     paddle_xsize = data['paddle_xsize']
+            #     paddle_ysize = data['paddle_ysize']
+            #     ball_speed = data['ball_speed']
+            #     ball_radius = data['ball_radius']
+            #     game_group = self.game_groups.get(self.group_name, None)
+            #     game_group.make_game_group_co_routine(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
             case "move_paddle":
                 if self.group_name is None:
                     return
