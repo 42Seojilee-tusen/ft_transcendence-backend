@@ -52,7 +52,6 @@ class GameGroup:
     async def get_user_datas(self, channels):
         res = []
 
-        logger.debug("=" * 10)
         for channal in channels:
             user_id = self.user_ids[channal]
             user: CustomUser = await self.get_user_object(user_id)
@@ -60,7 +59,6 @@ class GameGroup:
                 'player_name': user.username,
                 'player_image': user.profile_image.url
             })
-        logger.debug("=" * 10)
         return res
 
     def make_game_group_co_routine(self, width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius):
