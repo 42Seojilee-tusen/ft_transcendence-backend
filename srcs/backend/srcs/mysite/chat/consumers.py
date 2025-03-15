@@ -38,10 +38,10 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             # 유저의 수를 증가
             self.active_channels[self.id] = self.active_channels.get(self.id, 0) + 1
             
-            # # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
-            # if self.id in self.active_channels and self.active_channels[self.id] > 1:
-            #     logger.error(f"{self.user.username} is multi client error")
-            #     raise Exception('multi client error')
+            # 내이름을 가진 유저의 수가 1명 이상이면 에러를 던짐 => 멀티 클라이언트
+            if self.id in self.active_channels and self.active_channels[self.id] > 1:
+                logger.error(f"{self.user.username} is multi client error")
+                raise Exception('multi client error')
             
             # 웹소켓 접속을 수락
             await self.accept()
@@ -76,8 +76,8 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
         self.active_channels[self.id] -= 1
         if self.active_channels[self.id] <= 0:
             self.active_channels.pop(self.id, None)
-        # else:
-        #     return
+        else:
+            return
 
         # 대기중인 유저 목록에서 자기자신 제거
         self.match_manager.del_waiting(self.channel_name)
@@ -117,20 +117,6 @@ class GameBattleConsumer(AsyncWebsocketConsumer):
             logger.debug("type is not define")
             return
         match data['type']:
-            # 게임 초기화
-            # 매칭 후 게임화면 준비를 할 수 있도록 메시지 전송?
-            # case "game_init":
-            #     if self.game_groups[self.group_name].game_manager:
-            #         return
-            #     width = data['width']
-            #     height = data['height']
-            #     paddle_speed = data['paddle_speed']
-            #     paddle_xsize = data['paddle_xsize']
-            #     paddle_ysize = data['paddle_ysize']
-            #     ball_speed = data['ball_speed']
-            #     ball_radius = data['ball_radius']
-            #     game_group = self.game_groups.get(self.group_name, None)
-            #     game_group.make_game_group_co_routine(width, height, paddle_speed, paddle_xsize, paddle_ysize, ball_speed, ball_radius)
             case "move_paddle":
                 if self.group_name is None:
                     return
