@@ -17,7 +17,7 @@ class CustomUser(AbstractUser):
     email = models.CharField(max_length=100, blank=True, help_text="인트라 이메일")
     profile_image = models.FileField(upload_to=set_unique_filename, null=True, help_text="프로필 이미지 경로")
     username = models.CharField(
-        max_length=150,
+        max_length=10,
         unique=True,
         validators=[validate_username]
     )
